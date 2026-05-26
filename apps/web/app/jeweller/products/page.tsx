@@ -152,23 +152,23 @@ function ProductsContent() {
 
   return (
     <JewellerLayout>
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <header className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-medium tracking-tight">Products</h1>
+      <div className="mx-auto w-full max-w-7xl py-3 sm:py-5 md:py-8">
+        <header className="mb-6 flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-start">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-medium tracking-tight sm:text-3xl">Products</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {products?.length ?? 0} total · this shop only
             </p>
           </div>
           <Link href="/jeweller/products/new">
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Add product
             </Button>
           </Link>
         </header>
 
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[240px] flex-1">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative min-w-0 flex-1">
             <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
@@ -177,12 +177,12 @@ function ProductsContent() {
               className="pl-9"
             />
           </div>
-          <div className="flex gap-1">
+          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
             {filters.map((f) => (
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
                   filter === f.value
                     ? 'bg-foreground text-background'
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -203,7 +203,7 @@ function ProductsContent() {
           </div>
         ) : null}
 
-        <div className="overflow-hidden rounded-2xl border">
+        <div className="overflow-x-auto rounded-2xl border">
           {products === null ? (
             <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
@@ -214,7 +214,7 @@ function ProductsContent() {
               {query || filter !== 'all' ? 'No products match this filter.' : 'No products yet.'}
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="min-w-[860px] w-full text-sm">
               <thead className="bg-muted/40 text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left">Product</th>
@@ -243,8 +243,8 @@ function ProductsContent() {
                             <ImageIcon className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
                           )}
                         </div>
-                        <div>
-                          <div className="font-medium">{p.name}</div>
+                        <div className="min-w-0">
+                          <div className="max-w-[220px] truncate font-medium">{p.name}</div>
                           <div className="text-[11px] text-muted-foreground">
                             {p.metal ?? '—'} · {p.purity ?? '—'} · {p.sku ?? p.slug}
                           </div>

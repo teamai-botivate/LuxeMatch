@@ -56,7 +56,7 @@ export default function AppHeader() {
             generic line when the shop API is unreachable so the layout
             stays stable. */}
         <div
-          className="bg-[#FAF8F5] text-[#6b5a2c] text-xs tracking-wider px-4 md:px-6 lg:px-12 py-1.5 text-center"
+          className="truncate bg-[#FAF8F5] px-3 py-1.5 text-center text-xs tracking-wider text-[#6b5a2c] md:px-6 lg:px-12"
           data-testid="shop-welcome-strip"
         >
           {shop ? (
@@ -68,7 +68,7 @@ export default function AppHeader() {
             <span className="text-muted-foreground">Welcome to LuxeMatch</span>
           )}
         </div>
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-12 h-16 flex items-center justify-between">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-2 px-3 sm:px-4 md:px-6 lg:px-12">
           {/* Logo */}
           <Link href="/" data-testid="logo-link">
             <Image
@@ -76,7 +76,7 @@ export default function AppHeader() {
               alt="LuxeMatch"
               width={160}
               height={32}
-              className="h-8 w-auto object-contain cursor-pointer select-none"
+              className="h-7 w-auto cursor-pointer select-none object-contain sm:h-8"
               priority
             />
           </Link>

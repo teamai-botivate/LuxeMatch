@@ -37,7 +37,7 @@ export default function JewellerLayout({ children }: { children: React.ReactNode
       <div className="px-5 py-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5 mb-3">
           <Image src="/logo-icon.png" alt="LuxeMatch" width={32} height={32} className="h-8 w-8 object-contain flex-shrink-0" />
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Jeweller Portal</p>
             <p className="text-sm font-semibold text-foreground truncate leading-tight">
               {jeweller?.storeName ?? "Your Store"}
@@ -81,7 +81,7 @@ export default function JewellerLayout({ children }: { children: React.ReactNode
   );
 
   return (
-    <div className="min-h-screen bg-background flex" data-testid="jeweller-layout">
+    <div className="flex min-h-screen overflow-x-hidden bg-background" data-testid="jeweller-layout">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 bg-sidebar border-r border-sidebar-border fixed top-0 bottom-0 left-0">
         <SidebarContent />
@@ -91,16 +91,16 @@ export default function JewellerLayout({ children }: { children: React.ReactNode
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
-          <aside className="relative w-60 bg-sidebar border-r border-sidebar-border flex flex-col">
+          <aside className="relative flex w-[min(18rem,calc(100vw-2rem))] flex-col border-r border-sidebar-border bg-sidebar">
             <SidebarContent />
           </aside>
         </div>
       )}
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-60 flex flex-col min-h-screen">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-60">
         {/* Top bar */}
-        <header className="h-14 bg-white border-b border-border flex items-center px-4 md:px-6 gap-3 sticky top-0 z-10">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-white px-3 sm:px-4 md:px-6">
           <button
             className="lg:hidden p-1.5 rounded-lg hover:bg-accent transition-colors"
             onClick={() => setSidebarOpen(true)}
@@ -108,8 +108,8 @@ export default function JewellerLayout({ children }: { children: React.ReactNode
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-semibold text-foreground">
               {jeweller?.storeName ?? "Jeweller Portal"}
             </span>
             <span className="hidden sm:inline text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
@@ -119,7 +119,7 @@ export default function JewellerLayout({ children }: { children: React.ReactNode
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6">
+        <main className="min-w-0 flex-1 p-3 sm:p-4 md:p-6">
           {children}
         </main>
       </div>

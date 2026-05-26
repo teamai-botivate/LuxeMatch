@@ -140,9 +140,9 @@ export default function SettingsPage() {
 
   return (
     <JewellerLayout>
-      <div className="mx-auto max-w-5xl px-6 py-8" data-testid="jeweller-settings-page">
+      <div className="mx-auto w-full max-w-5xl py-3 sm:py-5 md:py-8" data-testid="jeweller-settings-page">
         <header className="mb-6">
-          <h1 className="text-3xl font-medium tracking-tight">Shop settings</h1>
+          <h1 className="text-2xl font-medium tracking-tight sm:text-3xl">Shop settings</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Manage store info, PIN, and idle-reset behaviour.
           </p>
@@ -154,8 +154,8 @@ export default function SettingsPage() {
             Loading settings...
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <form onSubmit={saveShopInfo} className="space-y-5 rounded-2xl border bg-card p-6 lg:col-span-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <form onSubmit={saveShopInfo} className="space-y-5 rounded-2xl border bg-card p-4 sm:p-6 lg:col-span-2">
               <div>
                 <h2 className="text-sm font-semibold">Store information</h2>
                 <p className="mt-1 text-xs text-muted-foreground">Shown in customer-facing shop surfaces.</p>
@@ -183,7 +183,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="rounded-xl border bg-background p-4">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <Label className="text-sm font-semibold">Idle reset</Label>
                     <p className="mt-1 text-xs text-muted-foreground">Clear customer state after inactivity.</p>
@@ -204,13 +204,13 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save settings
               </Button>
             </form>
 
-            <form onSubmit={changePin} className="space-y-4 rounded-2xl border bg-card p-6">
+            <form onSubmit={changePin} className="space-y-4 rounded-2xl border bg-card p-4 sm:p-6">
               <div>
                 <h2 className="flex items-center gap-2 text-sm font-semibold">
                   <ShieldCheck className="h-4 w-4 text-primary" />
@@ -227,7 +227,7 @@ export default function SettingsPage() {
               <Field label="Confirm new PIN" htmlFor="confirmPin">
                 <Input id="confirmPin" type="password" inputMode="numeric" maxLength={6} value={pin.confirmPin} onChange={(e) => setPin((p) => ({ ...p, confirmPin: e.target.value }))} />
               </Field>
-              <Button type="submit" variant="outline" disabled={pinSaving}>
+              <Button type="submit" variant="outline" className="w-full sm:w-auto" disabled={pinSaving}>
                 {pinSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Update PIN
               </Button>

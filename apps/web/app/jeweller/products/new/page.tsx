@@ -62,7 +62,7 @@ interface FormValues {
 
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-card border border-card-border rounded-2xl p-4 md:p-5 space-y-4">
+    <div className="min-w-0 space-y-4 rounded-2xl border border-card-border bg-card p-4 md:p-5">
       <div>
         <h3 className="text-sm font-semibold">{title}</h3>
         {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
@@ -133,7 +133,7 @@ export default function AddProductPage() {
 
   return (
     <JewellerLayout>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} data-testid="add-product-page">
+      <motion.div className="mx-auto w-full max-w-7xl py-3 sm:py-5 md:py-8" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} data-testid="add-product-page">
 
         {/* Page header */}
         <div className="flex items-center gap-3 mb-6">
@@ -154,7 +154,7 @@ export default function AddProductPage() {
             Mobile: single column, images section first (order-first)
             Desktop: two-column side by side
           */}
-          <div className="flex flex-col lg:grid lg:grid-cols-2 gap-5 items-start">
+          <div className="flex flex-col items-start gap-4 lg:grid lg:grid-cols-2 lg:gap-5">
 
             {/* ── RIGHT column: Images (appears FIRST on mobile via order) ── */}
             <div className="space-y-4 w-full lg:order-2">
@@ -265,7 +265,7 @@ export default function AddProductPage() {
                   {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label className="text-xs font-semibold mb-1.5 block">Category <span className="text-destructive">*</span></Label>
                     <Select onValueChange={v => setValue("category", v)}>
@@ -284,7 +284,7 @@ export default function AddProductPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label className="text-xs font-semibold mb-1.5 block">Purity <span className="text-destructive">*</span></Label>
                     <Select onValueChange={v => setValue("purity", v)}>
@@ -313,7 +313,7 @@ export default function AddProductPage() {
 
               {/* Pricing */}
               <SectionCard title="Pricing">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="priceMin" className="text-xs font-semibold mb-1.5 block">Min Price (₹) <span className="text-destructive">*</span></Label>
                     <Input
@@ -369,7 +369,7 @@ export default function AddProductPage() {
           </div>
 
           {/* Form actions — sticky on mobile */}
-          <div className="sticky bottom-0 bg-background/95 backdrop-blur border-t border-border mt-6 -mx-4 md:-mx-6 px-4 md:px-6 py-3 flex items-center justify-end gap-3 z-10">
+          <div className="sticky bottom-0 z-10 mt-6 -mx-3 flex items-center justify-end gap-3 border-t border-border bg-background/95 px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
             <Button
               type="button"
               variant="outline"

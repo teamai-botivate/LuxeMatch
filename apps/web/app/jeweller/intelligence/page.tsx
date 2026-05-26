@@ -116,7 +116,7 @@ export default function IntelligencePage() {
 
   return (
     <JewellerLayout>
-      <div className="mx-auto max-w-6xl" data-testid="jeweller-intelligence-page">
+      <div className="mx-auto w-full max-w-6xl py-3 sm:py-5 md:py-8" data-testid="jeweller-intelligence-page">
         <header className="mb-5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Owner Intelligence</p>
           <h1 className="text-xl md:text-2xl font-medium tracking-tight">Inventory Command Center</h1>
@@ -125,7 +125,7 @@ export default function IntelligencePage() {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-2xl border border-card-border bg-card p-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-muted-foreground">Inventory Health</p>
@@ -146,7 +146,7 @@ export default function IntelligencePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-3 xl:grid-cols-3">
           {(recommendations.length > 0 ? recommendations : [
             {
               id: "empty",
@@ -159,7 +159,7 @@ export default function IntelligencePage() {
           ]).map((rec) => {
             const Icon = priorityIcon(rec.priority);
             return (
-              <div key={rec.id} className="rounded-2xl border border-card-border bg-card p-4 shadow-sm">
+              <div key={rec.id} className="min-w-0 rounded-2xl border border-card-border bg-card p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-primary" />
@@ -198,7 +198,7 @@ export default function IntelligencePage() {
             <p className="text-xs text-muted-foreground mt-1">Sorted by the next best owner action.</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-[760px] w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
                   {["Product", "Demand", "Stock", "30d Sales", "30d Try-ons", "Action"].map((h) => (
@@ -236,7 +236,7 @@ export default function IntelligencePage() {
             <h2 className="text-sm font-semibold">Product Demand Signals</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-[760px] w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
                   {["Product", "Category", "Stock", "Sales 30d", "Sales 90d", "Views 30d", "Try-ons 30d"].map((h) => (

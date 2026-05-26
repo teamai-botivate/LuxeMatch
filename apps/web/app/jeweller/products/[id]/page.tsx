@@ -199,16 +199,16 @@ export default function EditProductPage() {
 
   return (
     <JewellerLayout>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} data-testid="edit-product-page">
+      <motion.div className="mx-auto w-full max-w-7xl py-3 sm:py-5 md:py-8" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} data-testid="edit-product-page">
         {/* Page header */}
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             <button onClick={() => router.push("/jeweller/products")} className="p-2 rounded-xl hover:bg-accent transition-colors">
               <ArrowLeft className="w-4 h-4 text-muted-foreground" />
             </button>
-            <h1 className="text-2xl font-medium tracking-tight line-clamp-1">Edit: {product.name}</h1>
+            <h1 className="line-clamp-1 text-xl font-medium tracking-tight sm:text-2xl">Edit: {product.name}</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             <Button
               type="button"
               variant="outline"
@@ -250,16 +250,16 @@ export default function EditProductPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
+          <div className="grid gap-5 lg:grid-cols-2 lg:gap-8">
             {/* LEFT — Form fields */}
-            <div className="space-y-5">
+            <div className="min-w-0 space-y-5">
               <div>
                 <Label htmlFor="name" className="text-xs font-semibold mb-1.5 block">Product Name <span className="text-destructive">*</span></Label>
                 <Input id="name" className="rounded-xl" {...register("name", { required: "Product name is required" })} data-testid="input-name" />
                 {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label className="text-xs font-semibold mb-1.5 block">Category <span className="text-destructive">*</span></Label>
                   <Select defaultValue={product.category_id ?? ""} onValueChange={v => setValue("category", v)}>
@@ -280,7 +280,7 @@ export default function EditProductPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label className="text-xs font-semibold mb-1.5 block">Purity <span className="text-destructive">*</span></Label>
                   <Select defaultValue={product.purity ?? ""} onValueChange={v => setValue("purity", v)}>
@@ -296,7 +296,7 @@ export default function EditProductPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="priceMin" className="text-xs font-semibold mb-1.5 block">Min Price (₹) <span className="text-destructive">*</span></Label>
                   <Input id="priceMin" type="number" className="rounded-xl" {...register("priceMin", { required: "Required" })} data-testid="input-price-min" />
@@ -336,10 +336,10 @@ export default function EditProductPage() {
             </div>
 
             {/* RIGHT — Images */}
-            <div className="space-y-6">
+            <div className="min-w-0 space-y-6">
               <div>
                 <h3 className="text-sm font-semibold mb-3">Product Images</h3>
-                <div className="border-2 border-dashed border-border rounded-2xl p-8 flex flex-col items-center gap-3 text-center cursor-pointer hover:border-primary/50 hover:bg-accent/30 transition-colors">
+                <div className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border p-5 text-center transition-colors hover:border-primary/50 hover:bg-accent/30 sm:p-8">
                   <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
                     <ImagePlus className="w-5 h-5 text-muted-foreground" />
                   </div>
@@ -377,7 +377,7 @@ export default function EditProductPage() {
           </div>
 
           {/* Form actions */}
-          <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-border">
+          <div className="mt-8 flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-end">
             <Button type="button" variant="outline" className="rounded-full px-6" onClick={() => router.push("/jeweller/products")} data-testid="button-cancel">
               Cancel
             </Button>

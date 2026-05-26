@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Sparkles, Heart, GitCompare, ChevronRight, LayoutDashboard } from "lucide-react";
+import { X, Sparkles, Heart, GitCompare, ChevronRight } from "lucide-react";
 import { useSavedItems } from "@/contexts/SavedItemsContext";
 import { useCompare } from "@/contexts/CompareContext";
 
@@ -55,7 +55,7 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-0 left-0 bottom-0 w-72 bg-white z-[70] md:hidden flex flex-col shadow-2xl"
+            className="fixed bottom-0 left-0 top-0 z-[70] flex w-[min(18rem,calc(100vw-2rem))] flex-col bg-white shadow-2xl md:hidden"
             data-testid="mobile-nav"
           >
             {/* Header */}

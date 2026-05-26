@@ -1,13 +1,12 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 function UnlockForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const nextPath = params.get('next') ?? '/jeweller/dashboard';
 
@@ -19,6 +18,7 @@ function UnlockForm() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+    let unlocked = false;
     try {
       const res = await fetch('/api/shop/unlock', {
         method: 'POST',
@@ -34,19 +34,20 @@ function UnlockForm() {
         );
         return;
       }
-      router.replace(nextPath);
-      router.refresh();
+      const safeNextPath = nextPath.startsWith('/jeweller') ? nextPath : '/jeweller/dashboard';
+      unlocked = true;
+      window.location.assign(safeNextPath);
     } catch {
       setError('Network error. Try again.');
     } finally {
-      setSubmitting(false);
+      if (!unlocked) setSubmitting(false);
     }
   }
 
   return (
     <form
       onSubmit={onSubmit}
-      className="w-full max-w-sm space-y-6 rounded-2xl border bg-card p-8 shadow-sm"
+      className="w-full max-w-sm space-y-5 rounded-2xl border bg-card p-5 shadow-sm sm:space-y-6 sm:p-8"
     >
       <div className="text-center">
         <span className="text-2xl font-semibold">
@@ -70,7 +71,7 @@ function UnlockForm() {
         placeholder="••••••"
         value={pin}
         onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-        className="text-center text-2xl tracking-[0.5em]"
+        className="text-center text-xl tracking-[0.35em] sm:text-2xl sm:tracking-[0.5em]"
         aria-label="6-digit PIN"
         aria-invalid={error ? 'true' : 'false'}
       />
@@ -81,7 +82,7 @@ function UnlockForm() {
         </p>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={pin.length !== 6 || submitting}>
+      <Button type="submit" className="h-11 w-full" disabled={pin.length !== 6 || submitting}>
         {submitting ? 'Unlocking…' : 'Unlock'}
       </Button>
 
@@ -96,7 +97,7 @@ function UnlockForm() {
 export default function UnlockPage() {
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-background px-4"
+      className="flex min-h-screen items-center justify-center bg-background px-3 py-6 sm:px-4"
       data-testid="jeweller-unlock-page"
     >
       <Suspense fallback={<div className="text-sm text-muted-foreground">Loading…</div>}>

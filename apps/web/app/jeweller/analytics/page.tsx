@@ -53,9 +53,9 @@ export default function AnalyticsPage() {
 
   return (
     <JewellerLayout>
-      <div className="mx-auto max-w-7xl px-6 py-8" data-testid="jeweller-analytics-page">
+      <div className="mx-auto w-full max-w-7xl py-3 sm:py-5 md:py-8" data-testid="jeweller-analytics-page">
         <header className="mb-6">
-          <h1 className="text-3xl font-medium tracking-tight">Analytics</h1>
+          <h1 className="text-2xl font-medium tracking-tight sm:text-3xl">Analytics</h1>
           <p className="mt-1 text-sm text-muted-foreground">Last 30 days, scoped to this shop.</p>
         </header>
 
@@ -63,15 +63,15 @@ export default function AnalyticsPage() {
           <div className="mb-4 rounded-xl bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
         ) : null}
 
-        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <DashboardMetricCard label="Searches" value={analytics ? totals.searches.toLocaleString('en-IN') : '...'} icon={Search} />
           <DashboardMetricCard label="Try-ons" value={analytics ? totals.tryons.toLocaleString('en-IN') : '...'} icon={Camera} accent="amber" />
           <DashboardMetricCard label="Top-product views" value={analytics ? totals.views.toLocaleString('en-IN') : '...'} icon={Eye} accent="green" />
           <DashboardMetricCard label="Logged revenue" value={analytics ? formatInr(totals.revenue) : '...'} icon={IndianRupee} />
         </div>
 
-        <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <section className="rounded-2xl border border-card-border bg-card p-5 lg:col-span-2" data-testid="chart-daily-activity">
+        <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <section className="min-w-0 rounded-2xl border border-card-border bg-card p-4 sm:p-5 lg:col-span-2" data-testid="chart-daily-activity">
             <h3 className="mb-4 text-sm font-semibold">Searches & try-ons</h3>
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={analytics?.daily_activity ?? []}>
@@ -92,7 +92,7 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </section>
 
-          <section className="rounded-2xl border border-card-border bg-card p-5" data-testid="chart-sales-metal">
+          <section className="min-w-0 rounded-2xl border border-card-border bg-card p-4 sm:p-5" data-testid="chart-sales-metal">
             <h3 className="mb-4 text-sm font-semibold">Sales by metal</h3>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={analytics?.sales_by_metal ?? []}>
@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
           </section>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <RankedTable title="Top try-on products" empty="No try-on events yet." rows={(analytics?.top_tryon_products ?? []).map((p) => [p.name, p.tryons])} />
           <RankedTable title="Most viewed products" empty="No product views yet." rows={(analytics?.top_viewed_products ?? []).map((p) => [p.name, p.views])} />
           <RankedTable title="Sales by category" empty="No sales logged yet." rows={(analytics?.sales_by_category ?? []).map((s) => [s.category, `${s.sales} sale${s.sales === 1 ? '' : 's'} · ${formatInr(s.revenue)}`])} />
@@ -133,7 +133,8 @@ function RankedTable({
         {title}
       </div>
       {rows.length ? (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="min-w-[420px] w-full text-sm">
           <tbody>
             {rows.map(([label, value]) => (
               <tr key={label} className="border-b last:border-b-0">
@@ -143,6 +144,7 @@ function RankedTable({
             ))}
           </tbody>
         </table>
+        </div>
       ) : (
         <div className="p-6 text-sm text-muted-foreground">{empty}</div>
       )}

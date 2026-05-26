@@ -56,7 +56,7 @@ function MetricCard({
 }) {
   const inner = (
     <div
-      className={`rounded-2xl border p-5 transition ${
+      className={`min-w-0 rounded-2xl border p-4 transition sm:p-5 ${
         warn ? 'border-amber-300 bg-amber-50/40' : 'border-border bg-card'
       } ${href ? 'hover:border-foreground/30' : ''}`}
     >
@@ -157,21 +157,21 @@ export default function DashboardPage() {
 
   return (
     <JewellerLayout>
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <header className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-medium tracking-tight">Dashboard</h1>
+      <div className="mx-auto w-full max-w-6xl py-3 sm:py-5 md:py-8">
+        <header className="mb-6 flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-start">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-medium tracking-tight sm:text-3xl">Dashboard</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               All numbers are scoped to this shop.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Link href="/jeweller/products/new">
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" /> Add product
               </Button>
             </Link>
-            <Button variant="outline" onClick={reindexAll} disabled={reindexing}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={reindexAll} disabled={reindexing}>
               <RefreshCw className={`mr-2 h-4 w-4 ${reindexing ? 'animate-spin' : ''}`} />
               {reindexing ? 'Reindexing...' : 'Reindex all'}
             </Button>
@@ -191,7 +191,7 @@ export default function DashboardPage() {
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Business Snapshot
           </h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard label="Views 30d" value={summary?.views30 ?? '...'} sub={`${summary?.views7 ?? 0} this week`} />
             <MetricCard
               label="Sales 30d"
@@ -203,7 +203,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="mb-8 rounded-2xl border border-card-border bg-card p-5 shadow-sm" data-testid="owner-recommendations">
+        <section className="mb-8 rounded-2xl border border-card-border bg-card p-4 shadow-sm sm:p-5" data-testid="owner-recommendations">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-primary">
@@ -219,7 +219,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
             {(recommendations.length > 0
               ? recommendations.slice(0, 3)
               : [
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                   },
                 ]
             ).map((rec) => (
-              <div key={rec.id} className="min-h-[172px] rounded-xl border border-border bg-background p-4">
+              <div key={rec.id} className="min-h-[172px] min-w-0 rounded-xl border border-border bg-background p-4">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
@@ -275,7 +275,7 @@ export default function DashboardPage() {
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Inventory
           </h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <MetricCard label="Total products" value={metrics?.total_products ?? '...'} href="/jeweller/products" />
             <MetricCard label="Active" value={metrics?.active_products ?? '...'} href="/jeweller/products" />
             <MetricCard
@@ -299,8 +299,8 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border bg-card p-5">
+        <section className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border bg-card p-4 sm:p-5">
             <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               <Camera className="h-3 w-3" /> Try-ons
             </div>
@@ -319,7 +319,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border bg-card p-5">
+          <div className="rounded-2xl border bg-card p-4 sm:p-5">
             <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               <Search className="h-3 w-3" /> Searches
             </div>
@@ -344,9 +344,9 @@ export default function DashboardPage() {
           <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             <Eye className="h-3 w-3" /> Top viewed (30 days)
           </h2>
-          <div className="overflow-hidden rounded-2xl border">
+          <div className="overflow-x-auto rounded-2xl border">
             {metrics?.top_viewed_products?.length ? (
-              <table className="w-full text-sm">
+              <table className="min-w-[420px] w-full text-sm">
                 <thead className="bg-muted/40 text-xs uppercase tracking-widest text-muted-foreground">
                   <tr>
                     <th className="px-4 py-2 text-left">Product</th>
