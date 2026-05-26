@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { motion } from "motion/react";
-import { ImagePlus, X, Star, Upload, ArrowLeft, RefreshCw, Trash2 } from "lucide-react";
+import { ImagePlus, X, Star, ArrowLeft, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import JewellerLayout from "@/components/layout/JewellerLayout";
-import TryOnAssetCalibratorPlaceholder from "@/components/jeweller/TryOnAssetCalibratorPlaceholder";
+import TryOnAssetCalibrator from "@/components/jeweller/TryOnAssetCalibrator";
 import { getProductById } from "@/lib/mock-data";
 import NotFoundView from "@/components/ui/NotFoundView";
 
@@ -48,7 +48,6 @@ export default function EditProductPage() {
 
   const [occasions, setOccasions] = useState<string[]>(product?.occasions ?? []);
   const [primaryIndex, setPrimaryIndex] = useState(0);
-  const [tryOnUploaded, setTryOnUploaded] = useState(product?.hasTryOn ?? false);
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
     defaultValues: product ? {
@@ -258,52 +257,8 @@ export default function EditProductPage() {
                 </div>
               </div>
 
-              {/* Try-On Asset Calibration */}
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Try-On Asset Calibration</h3>
-                <p className="text-xs text-muted-foreground mb-3">Upload a transparent PNG and calibrate its placement for the AR try-on experience</p>
-
-                {!tryOnUploaded ? (
-                  <div
-                    className="border-2 border-dashed border-primary/20 rounded-2xl p-6 flex flex-col items-center gap-3 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-colors"
-                    onClick={() => setTryOnUploaded(true)}
-                    data-testid="tryon-upload-zone"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Upload className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-primary">Add Try-On Asset</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Only .png files accepted for AR overlay</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border border-border rounded-2xl p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Upload className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium">{product.name.toLowerCase().replace(/\s+/g, "_")}.png</p>
-                          <p className="text-[10px] text-muted-foreground">{product.hasTryOn ? "AR Ready" : "Uploaded"} · 3.1MB</p>
-                        </div>
-                      </div>
-                      <button type="button" onClick={() => setTryOnUploaded(false)} className="text-xs text-muted-foreground hover:text-destructive">Remove</button>
-                    </div>
-                    <TryOnAssetCalibratorPlaceholder
-                      jewelleryType={
-                        product.category === "Earrings" ? "earring_left"
-                        : product.category === "Ring" ? "ring_index"
-                        : product.category === "Bangle" ? "bangle"
-                        : product.category === "Choker" ? "necklace"
-                        : "necklace"
-                      }
-                      productName={product.name}
-                    />
-                  </div>
-                )}
-              </div>
+              {/* Try-On Asset Calibration — real, Supabase-backed */}
+              <TryOnAssetCalibrator productId={id ?? ''} />
             </div>
           </div>
 

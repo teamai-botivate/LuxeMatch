@@ -23,6 +23,13 @@ export {
 export { ARRenderer } from './renderer';
 
 export {
+  renderPreview,
+  defaultSampleAnchor,
+  type PreviewParams,
+  type SampleAnchor,
+} from './preview';
+
+export {
   TryOnEngine,
   type EngineMetrics,
   type EngineOptions,
