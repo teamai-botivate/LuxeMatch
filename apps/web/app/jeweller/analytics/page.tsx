@@ -1,8 +1,8 @@
 'use client';
 
-import type { ShopAnalytics } from '@luxematch/db';
+import type { FunnelAnalytics, ShopAnalytics } from '@luxematch/db';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Area, AreaChart } from 'recharts';
-import { BarChart3, Camera, Eye, IndianRupee, Search } from 'lucide-react';
+import { ArrowRight, BarChart3, Camera, Eye, IndianRupee, Search, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import JewellerLayout from '@/components/layout/JewellerLayout';
@@ -18,14 +18,18 @@ function formatInr(value: number) {
 
 export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<ShopAnalytics | null>(null);
+  const [funnel, setFunnel] = useState<FunnelAnalytics | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       setError(null);
       try {
-        const res = await fetch('/api/shop/analytics', { cache: 'no-store' });
-        const json = (await res.json()) as
+        const [analyticsRes, funnelRes] = await Promise.all([
+          fetch('/api/shop/analytics', { cache: 'no-store' }),
+          fetch('/api/intelligence/funnel', { cache: 'no-store' }),
+        ]);
+        const json = (await analyticsRes.json()) as
           | { data: ShopAnalytics }
           | { error: { message: string } };
         if ('error' in json) {
@@ -33,6 +37,13 @@ export default function AnalyticsPage() {
           return;
         }
         setAnalytics(json.data);
+
+        if (funnelRes.ok) {
+          const funnelJson = (await funnelRes.json()) as
+            | { data: FunnelAnalytics }
+            | { error: unknown };
+          if ('data' in funnelJson) setFunnel(funnelJson.data);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load analytics');
       }
@@ -106,6 +117,27 @@ export default function AnalyticsPage() {
           </section>
         </div>
 
+        {funnel ? (
+          <section className="mb-8 rounded-2xl border border-card-border bg-card p-4 sm:p-5" data-testid="funnel-analysis">
+            <div className="mb-4 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">Conversion Funnel</h3>
+              <span className="ml-auto text-xs text-muted-foreground">Last {funnel.period_days} days</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <FunnelStep label="Views" value={funnel.views} />
+              <FunnelArrow pct={funnel.view_to_tryon_pct} />
+              <FunnelStep label="Try-ons" value={funnel.tryons} accent />
+              <FunnelArrow pct={funnel.tryon_to_sale_pct} />
+              <FunnelStep label="Sales" value={funnel.sales} accent />
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {funnel.searches.toLocaleString('en-IN')} searches →{' '}
+              <strong>{funnel.search_to_tryon_pct}%</strong> led to a try-on.
+            </p>
+          </section>
+        ) : null}
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <RankedTable title="Top try-on products" empty="No try-on events yet." rows={(analytics?.top_tryon_products ?? []).map((p) => [p.name, p.tryons])} />
           <RankedTable title="Most viewed products" empty="No product views yet." rows={(analytics?.top_viewed_products ?? []).map((p) => [p.name, p.views])} />
@@ -114,6 +146,24 @@ export default function AnalyticsPage() {
         </div>
       </div>
     </JewellerLayout>
+  );
+}
+
+function FunnelStep({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+  return (
+    <div className={`flex flex-col items-center rounded-xl px-5 py-3 ${accent ? 'bg-primary/8 text-primary' : 'bg-muted/40'}`}>
+      <span className="text-xl font-semibold">{value.toLocaleString('en-IN')}</span>
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+function FunnelArrow({ pct }: { pct: number }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 text-muted-foreground">
+      <ArrowRight className="h-4 w-4" />
+      <span className="text-[10px] font-medium">{pct}%</span>
+    </div>
   );
 }
 

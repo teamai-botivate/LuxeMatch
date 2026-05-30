@@ -7,7 +7,10 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@supabase/supabase-js": [
+        "../../node_modules/.pnpm/@supabase+supabase-js@2.106.1/node_modules/@supabase/supabase-js"
+      ]
     },
     "verbatimModuleSyntax": false
   },

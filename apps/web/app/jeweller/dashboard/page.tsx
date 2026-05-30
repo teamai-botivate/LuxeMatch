@@ -16,6 +16,8 @@ import { useEffect, useState } from 'react';
 
 import JewellerLayout from '@/components/layout/JewellerLayout';
 import { Button } from '@/components/ui/button';
+import { useMultiDeviceSync } from '@/hooks/use-multi-device-sync';
+import { useShop } from '@/hooks/use-shop';
 import { formatINR } from '@/lib/format';
 
 type Recommendation = {
@@ -90,6 +92,16 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [reindexing, setReindexing] = useState(false);
   const [reindexMessage, setReindexMessage] = useState<string | null>(null);
+
+  const shop = useShop();
+
+  // Refresh whenever another device adds a product, records a sale, or logs a
+  // try-on so the dashboard stays live without manual reloads.
+  useMultiDeviceSync(shop?.id ?? null, (event) => {
+    if (event.type === 'product_changed' || event.type === 'sale_recorded') {
+      void load();
+    }
+  });
 
   async function load() {
     setError(null);

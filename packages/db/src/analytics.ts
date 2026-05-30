@@ -20,6 +20,20 @@ export type ShopAnalytics = {
   sales_by_metal: Array<{ metal: string; sales: number; revenue: number }>;
 };
 
+export type FunnelAnalytics = {
+  period_days: number;
+  views: number;
+  searches: number;
+  tryons: number;
+  sales: number;
+  /** Percentage of product views that led to a try-on. */
+  view_to_tryon_pct: number;
+  /** Percentage of try-ons that led to a logged sale. */
+  tryon_to_sale_pct: number;
+  /** Percentage of searches that led to a try-on. */
+  search_to_tryon_pct: number;
+};
+
 function daysAgoIso(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -29,6 +43,53 @@ function daysAgoIso(days: number): string {
 /** YYYY-MM-DD bucketing — local time is fine, dashboard isn't audit-grade. */
 function dayKey(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
+}
+
+export async function getFunnelAnalytics(
+  jewellerId: string,
+  days = 30,
+): Promise<FunnelAnalytics> {
+  const sb = getSupabaseServer();
+  const since = daysAgoIso(days);
+
+  const [viewsRes, searchRes, tryonRes, salesRes] = await Promise.all([
+    sb
+      .from('product_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('jeweller_id', jewellerId)
+      .gte('created_at', since),
+    sb
+      .from('search_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('jeweller_id', jewellerId)
+      .gte('created_at', since),
+    sb
+      .from('tryon_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('jeweller_id', jewellerId)
+      .gte('created_at', since),
+    sb
+      .from('product_sales')
+      .select('*', { count: 'exact', head: true })
+      .eq('jeweller_id', jewellerId)
+      .gte('sold_at', since),
+  ]);
+
+  const views = viewsRes.count ?? 0;
+  const searches = searchRes.count ?? 0;
+  const tryons = tryonRes.count ?? 0;
+  const sales = salesRes.count ?? 0;
+
+  return {
+    period_days: days,
+    views,
+    searches,
+    tryons,
+    sales,
+    view_to_tryon_pct: views > 0 ? Math.round((tryons / views) * 100) : 0,
+    tryon_to_sale_pct: tryons > 0 ? Math.round((sales / tryons) * 100) : 0,
+    search_to_tryon_pct: searches > 0 ? Math.round((tryons / searches) * 100) : 0,
+  };
 }
 
 export async function getShopAnalytics(jewellerId: string): Promise<ShopAnalytics> {

@@ -111,9 +111,20 @@ export async function embedHybrid(opts: {
   if (!opts.text && !opts.image) {
     throw new Error('embedHybrid requires text, image, or both');
   }
+
+  // Auto-infer weight when the caller doesn't specify — no guessing needed
+  // when only one modality is present, and visual search is the primary intent
+  // when both are present so we lean toward image.
+  let effectiveWeight = opts.weight;
+  if (effectiveWeight === undefined) {
+    if (opts.text && !opts.image) effectiveWeight = 1.0;
+    else if (opts.image && !opts.text) effectiveWeight = 0.0;
+    else effectiveWeight = 0.35;
+  }
+
   const form = new FormData();
   if (opts.text) form.append('text', opts.text);
-  if (opts.weight !== undefined) form.append('weight', String(opts.weight));
+  form.append('weight', String(effectiveWeight));
   if (opts.image) form.append('file', toBlob(opts.image), 'image');
 
   const res = await fetch(`${baseUrl()}/embed/hybrid`, {

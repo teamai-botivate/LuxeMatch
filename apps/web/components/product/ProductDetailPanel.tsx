@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, GitCompare, Sparkles } from "lucide-react";
+import { Heart, GitCompare, Sparkles, ShoppingBag, Zap } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import TrustBadge from "@/components/ui/TrustBadge";
 import PriceDisplay from "@/components/ui/PriceDisplay";
-import { Product, MOCK_JEWELLERS } from "@/lib/mock-data";
+import { Product } from "@/lib/mock-data";
+import { useShop } from "@/hooks/use-shop";
 import { useSavedItems } from "@/contexts/SavedItemsContext";
 import { useCompare } from "@/contexts/CompareContext";
+import { useCart } from "@/hooks/use-cart";
 
 interface ProductDetailPanelProps {
   product: Product;
@@ -18,9 +21,20 @@ export default function ProductDetailPanel({ product }: ProductDetailPanelProps)
   const router = useRouter();
   const { isSaved, toggleSave } = useSavedItems();
   const { isCompared, toggleCompare } = useCompare();
+  const { addToCart } = useCart();
+  const shop = useShop();
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState(false);
   const saved = isSaved(product.id);
   const compared = isCompared(product.id);
-  const jeweller = MOCK_JEWELLERS.find(j => j.id === product.jewellerId);
+
+  async function handleAddToCart() {
+    setAdding(true);
+    const ok = await addToCart(product.id);
+    setAdding(false);
+    if (ok) { setAdded(true); setTimeout(() => setAdded(false), 2000); }
+    else router.push('/login');
+  }
 
   const specs = [
     { label: "Metal", value: product.metal },
@@ -35,12 +49,10 @@ export default function ProductDetailPanel({ product }: ProductDetailPanelProps)
       {/* Category + Jeweller */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-widest text-primary">{product.category}</span>
-        {jeweller && (
-          <Link href={`/store/${jeweller.slug}`}>
-            <span className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
-              by {jeweller.storeName}
-            </span>
-          </Link>
+        {shop && (
+          <span className="text-xs text-muted-foreground">
+            by {shop.store_name}
+          </span>
         )}
       </div>
 
@@ -60,11 +72,34 @@ export default function ProductDetailPanel({ product }: ProductDetailPanelProps)
         {product.hasTryOn && <TrustBadge variant="Virtual Try-On" />}
       </div>
 
-      {/* Actions */}
+      {/* Primary CTAs */}
+      <div className="flex gap-3">
+        <Button
+          className="flex-1 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all hover:scale-[1.02] flex items-center gap-2"
+          onClick={() => void handleAddToCart()}
+          disabled={adding}
+          data-testid="button-add-to-cart"
+        >
+          <ShoppingBag className="w-4 h-4" />
+          {added ? "Added ✓" : adding ? "Adding…" : "Add to Cart"}
+        </Button>
+        <Button
+          className="flex-1 rounded-full border border-primary text-primary bg-primary/5 hover:bg-primary/10 transition-all flex items-center gap-2"
+          onClick={() => { void handleAddToCart().then(() => router.push('/checkout')); }}
+          disabled={adding}
+          data-testid="button-buy-now"
+        >
+          <Zap className="w-4 h-4" />
+          Buy Now
+        </Button>
+      </div>
+
+      {/* Secondary Actions */}
       <div className="flex gap-3">
         {product.hasTryOn && (
           <Button
-            className="flex-1 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all hover:scale-[1.02] flex items-center gap-2"
+            variant="outline"
+            className="flex-1 rounded-full flex items-center gap-2 border-border hover:border-primary/50 hover:bg-accent"
             onClick={() => router.push("/try-on")}
             data-testid="button-try-on-detail"
           >
@@ -83,7 +118,7 @@ export default function ProductDetailPanel({ product }: ProductDetailPanelProps)
         </Button>
         <Button
           variant="outline"
-          className={`${product.hasTryOn ? "" : "flex-1"} rounded-full flex items-center gap-2 border-border hover:border-primary/50 hover:bg-accent`}
+          className="rounded-full flex items-center gap-2 border-border hover:border-primary/50 hover:bg-accent"
           onClick={() => toggleCompare(product.id)}
           data-testid="button-compare-detail"
         >

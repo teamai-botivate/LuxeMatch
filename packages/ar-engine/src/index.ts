@@ -1,6 +1,15 @@
 export { OneEuroFilter } from './oneEuroFilter';
 
 export {
+  imageToVisibleBounds,
+  visibleBoundsFrom3DBox,
+  selectAnchorPoint,
+  computeGroupPosition,
+  flipUVsVertical,
+  type VisibleBounds,
+} from './overlayMath';
+
+export {
   mirrorLandmarks,
   smoothLandmarks,
   resetSmootherPool,

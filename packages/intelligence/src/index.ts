@@ -19,6 +19,8 @@ export const RecommendationActionSchema = z.enum([
   'review_price',
   'reduce_stock',
   'season_ready',
+  'trending_up',
+  'stalled_interest',
 ]);
 export type RecommendationAction = z.infer<typeof RecommendationActionSchema>;
 
@@ -113,6 +115,31 @@ function demandScore(product: ProductDemandSnapshot): number {
   );
 }
 
+/**
+ * Ratio of the 30-day rate (annualised to 90d) vs the 90-day rate.
+ * > 1.3 = accelerating demand; < 0.4 = decelerating.
+ */
+function velocityRatio(product: ProductDemandSnapshot): number {
+  const rate30 = product.sales30 * 3;
+  const rate90 = product.sales90;
+  if (rate90 === 0) return rate30 > 0 ? 2.0 : 1.0;
+  return rate30 / rate90;
+}
+
+/** Penalise score for products that haven't sold recently. */
+function recencyMultiplier(product: ProductDemandSnapshot, now: Date): number {
+  if (!product.lastSoldAt) return 0.7;
+  const daysSince = (now.getTime() - new Date(product.lastSoldAt).getTime()) / 86_400_000;
+  if (daysSince < 14) return 1.0;
+  if (daysSince < 45) return 0.85;
+  if (daysSince < 90) return 0.70;
+  return 0.50;
+}
+
+function weightedScore(product: ProductDemandSnapshot, now: Date): number {
+  return demandScore(product) * recencyMultiplier(product, now);
+}
+
 function confidenceFor(productCount: number, signalCount: number): Recommendation['confidence'] {
   if (productCount >= 12 && signalCount >= 80) return 'high';
   if (productCount >= 6 && signalCount >= 25) return 'medium';
@@ -136,9 +163,10 @@ export function generateInventoryRecommendations(
   const upcomingSeason = getUpcomingSeason(now);
   const recommendations: Recommendation[] = [];
 
+  // ── Hot low stock ──────────────────────────────────────────────────────────
   const hotLowStock = products
     .filter((p) => p.sales30 >= 2 && p.stockCount <= Math.max(2, p.sales30))
-    .sort((a, b) => demandScore(b) - demandScore(a))[0];
+    .sort((a, b) => weightedScore(b, now) - weightedScore(a, now))[0];
 
   if (hotLowStock) {
     recommendations.push({
@@ -149,11 +177,33 @@ export function generateInventoryRecommendations(
       nextStep: `Reorder ${Math.max(4, hotLowStock.sales30 * 2)} units or add similar designs this week to avoid missed demand.`,
       priority: 'high',
       confidence,
-      score: demandScore(hotLowStock),
+      score: weightedScore(hotLowStock, now),
       relatedProductIds: [hotLowStock.productId],
     });
   }
 
+  // ── Trending up: demand accelerating in the last 30d vs 90d baseline ──────
+  const trendingUp = products
+    .filter((p) => velocityRatio(p) > 1.3 && p.sales90 >= 3 && p.stockCount > 0)
+    .sort((a, b) => velocityRatio(b) - velocityRatio(a))[0];
+
+  if (trendingUp) {
+    const vel = velocityRatio(trendingUp);
+    const avg30dBase = Math.round(trendingUp.sales90 / 3);
+    recommendations.push({
+      id: `trending-up-${trendingUp.productId}`,
+      action: 'trending_up',
+      title: `Demand accelerating for ${productLabel(trendingUp)}`,
+      reason: `${trendingUp.name} sold ${trendingUp.sales30} times this month vs ~${avg30dBase} per month over the past 90 days — ${Math.round(vel * 100 - 100)}% faster.`,
+      nextStep: 'Feature it prominently and ensure adequate stock for the next 4 weeks.',
+      priority: 'high',
+      confidence,
+      score: weightedScore(trendingUp, now) * vel,
+      relatedProductIds: [trendingUp.productId],
+    });
+  }
+
+  // ── High interest, low conversion ─────────────────────────────────────────
   const highInterestLowSale = products
     .filter((p) => p.sales30 === 0 && p.tryons30 >= 4)
     .sort((a, b) => b.tryons30 - a.tryons30)[0];
@@ -172,6 +222,26 @@ export function generateInventoryRecommendations(
     });
   }
 
+  // ── Stalled interest: had try-ons but engagement dropped off ──────────────
+  const stalledInterest = products
+    .filter((p) => p.tryons90 >= 5 && p.tryons30 === 0 && p.sales90 === 0)
+    .sort((a, b) => b.tryons90 - a.tryons90)[0];
+
+  if (stalledInterest) {
+    recommendations.push({
+      id: `stalled-${stalledInterest.productId}`,
+      action: 'stalled_interest',
+      title: `Customer interest dropped for ${stalledInterest.name}`,
+      reason: `${stalledInterest.name} had ${stalledInterest.tryons90} try-ons over 90 days but zero in the last 30, with no sale recorded.`,
+      nextStep: 'Move to a new display position, adjust price, or bundle with a bestseller to reignite interest.',
+      priority: 'medium',
+      confidence,
+      score: stalledInterest.tryons90 * 0.5,
+      relatedProductIds: [stalledInterest.productId],
+    });
+  }
+
+  // ── Slow moving ───────────────────────────────────────────────────────────
   const slowMoving = products
     .filter((p) => p.stockCount >= 8 && p.sales90 === 0 && p.views90 < 20)
     .sort((a, b) => b.stockCount - a.stockCount)[0];
@@ -190,6 +260,7 @@ export function generateInventoryRecommendations(
     });
   }
 
+  // ── Season readiness ──────────────────────────────────────────────────────
   if (upcomingSeason) {
     const seasonalProducts = products
       .filter((p) => {
@@ -200,7 +271,7 @@ export function generateInventoryRecommendations(
         ];
         return upcomingSeason.tags.some((tag) => haystack.includes(tag));
       })
-      .sort((a, b) => demandScore(b) - demandScore(a))
+      .sort((a, b) => weightedScore(b, now) - weightedScore(a, now))
       .slice(0, 3);
 
     if (seasonalProducts.length > 0) {
@@ -213,15 +284,16 @@ export function generateInventoryRecommendations(
         nextStep: `Prioritize ${upcomingSeason.stockFocus.slice(0, 3).join(', ')} inventory and refresh display collections.`,
         priority: lowStockCount > 0 ? 'high' : 'medium',
         confidence,
-        score: seasonalProducts.reduce((sum, p) => sum + demandScore(p), 0),
+        score: seasonalProducts.reduce((sum, p) => sum + weightedScore(p, now), 0),
         relatedProductIds: seasonalProducts.map((p) => p.productId),
         season: upcomingSeason.label,
       });
     }
   }
 
+  // ── Fallback: keep top product visible ────────────────────────────────────
   if (recommendations.length === 0) {
-    const topInterest = [...products].sort((a, b) => demandScore(b) - demandScore(a))[0];
+    const topInterest = [...products].sort((a, b) => weightedScore(b, now) - weightedScore(a, now))[0];
     if (topInterest) {
       recommendations.push({
         id: `keep-visible-${topInterest.productId}`,
@@ -231,7 +303,7 @@ export function generateInventoryRecommendations(
         nextStep: 'Place it in the first screen of the store catalogue and keep staff aware of its talking points.',
         priority: 'low',
         confidence,
-        score: demandScore(topInterest),
+        score: weightedScore(topInterest, now),
         relatedProductIds: [topInterest.productId],
       });
     }

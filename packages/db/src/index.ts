@@ -31,7 +31,7 @@ export {
 } from './products';
 
 export { getShopMetrics, type ShopMetrics } from './metrics';
-export { getShopAnalytics, type ShopAnalytics } from './analytics';
+export { getShopAnalytics, getFunnelAnalytics, type ShopAnalytics, type FunnelAnalytics } from './analytics';
 
 export {
   getCategories,
@@ -56,6 +56,28 @@ export {
 } from './media';
 
 export { logSearchEvent, type SearchEventInput } from './events';
+
+export {
+  getBranches, getBranchById, type BranchRow,
+} from './branches';
+
+export {
+  getOrCreateCustomer, getCustomerById, updateCustomerName,
+  getCustomerAddresses, upsertCustomerAddress,
+  createOtp, verifyOtp,
+  type CustomerRow, type CustomerAddressRow,
+} from './customers';
+
+export {
+  getCart, addToCart, updateCartItem, removeFromCart, clearCart, getCartCount,
+  type CartItemWithProduct,
+} from './cart';
+
+export {
+  placeOrder, getCustomerOrders, getOrderWithItems, getOrderByNumber,
+  type OrderRow, type OrderItemRow, type OrderStatusHistoryRow,
+  type OrderWithItems, type PlaceOrderInput, type OrderStatus,
+} from './ecommerce';
 
 export {
   getDashboardSummary,

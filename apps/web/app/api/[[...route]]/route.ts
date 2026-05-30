@@ -8,6 +8,9 @@ import { intelligenceRoutes } from '@/lib/api/intelligence';
 import { searchRoutes } from '@/lib/api/search';
 import { shopRoutes } from '@/lib/api/shop';
 import { tryOnAssetRoutes } from '@/lib/api/tryon-assets';
+import { authCustomerRoutes } from '@/lib/api/auth-customer';
+import { cartRoutes } from '@/lib/api/cart-routes';
+import { customerOrderRoutes } from '@/lib/api/customer-orders';
 
 export const runtime = 'nodejs';
 
@@ -28,6 +31,10 @@ app.route('/intelligence', intelligenceRoutes);
 app.route('/search', searchRoutes);
 app.route('/tryon-assets', tryOnAssetRoutes);
 app.route('/embeddings', embeddingsRoutes);
+// E-commerce routes
+app.route('/customer', authCustomerRoutes);
+app.route('/customer/cart', cartRoutes);
+app.route('/customer', customerOrderRoutes);
 app.route('/', catalogRoutes);
 
 export const GET = handle(app);

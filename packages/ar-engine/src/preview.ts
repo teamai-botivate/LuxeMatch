@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 
-import { computeAlphaBounds } from './alphaBounds';
+import {
+  computeGroupPosition,
+  flipUVsVertical,
+  imageToVisibleBounds,
+  selectAnchorPoint,
+} from './overlayMath';
 import {
   applyCalibration,
   type Calibration,
@@ -18,6 +23,7 @@ import {
 //
 // Anchor/scale/rotation logic MUST stay in sync with renderer.ts — the
 // calibrator preview lying to the jeweller would be the worst possible bug.
+// Both now delegate to overlayMath.ts so drift is structurally impossible.
 // ────────────────────────────────────────────────────────────────────────────
 
 export type SampleAnchor = {
@@ -84,22 +90,11 @@ export function renderPreview(params: PreviewParams): HTMLCanvasElement {
   const imgW = assetImage.naturalWidth;
   const imgH = assetImage.naturalHeight;
   const aspect = imgW / imgH;
-  const bounds = computeAlphaBounds(assetImage);
-  const visW = (bounds.maxX - bounds.minX) / imgW;
-  const visH = (bounds.maxY - bounds.minY) / imgH;
-  const visCenterU = (bounds.minX + bounds.maxX) / (2 * imgW);
-  const visCenterV = (bounds.minY + bounds.maxY) / (2 * imgH);
-  const visW_local = visW * aspect;
-  const visH_local = visH * 1;
-  const visCenterX_local = (visCenterU - 0.5) * aspect;
-  const visCenterY_local = (visCenterV - 0.5) * 1;
-  const visTopY_local = visCenterY_local - visH_local / 2;
-  const visBottomY_local = visCenterY_local + visH_local / 2;
+
+  const vb = imageToVisibleBounds(assetImage, imgW, imgH);
 
   const geo = new THREE.PlaneGeometry(aspect, 1);
-  const uvAttr = geo.attributes.uv!;
-  for (let i = 0; i < uvAttr.count; i++) uvAttr.setY(i, 1.0 - uvAttr.getY(i));
-  uvAttr.needsUpdate = true;
+  flipUVsVertical(geo);
 
   const mat = new THREE.MeshBasicMaterial({
     map: texture,
@@ -122,33 +117,14 @@ export function renderPreview(params: PreviewParams): HTMLCanvasElement {
   wrapper.add(baseMesh);
   scene.add(wrapper);
 
-  const inv = 1 / (maxDim || 1);
-  const vb = {
-    widthLocal: visW_local * inv,
-    centerX: (visCenterX_local - center.x) * inv,
-    centerY: (visCenterY_local - center.y) * inv,
-    topY: (visTopY_local - center.y) * inv,
-    bottomY: (visBottomY_local - center.y) * inv,
-  };
-
   const [x, y] = overlay.position;
   const S = overlay.scale / (vb.widthLocal || 1);
   wrapper.scale.set(S, S, S);
   wrapper.rotation.set(0, 0, overlay.rotationZ);
 
-  let anchorLocalX = vb.centerX;
-  let anchorLocalY = vb.centerY;
-  if (jewelleryType === 'earring_left' || jewelleryType === 'earring_right') {
-    anchorLocalY = vb.topY;
-  } else if (jewelleryType === 'necklace') {
-    anchorLocalY = vb.topY + (vb.bottomY - vb.topY) * 0.05;
-  }
-
-  const cos = Math.cos(overlay.rotationZ);
-  const sin = Math.sin(overlay.rotationZ);
-  const worldDX = (anchorLocalX * cos - anchorLocalY * sin) * S;
-  const worldDY = (anchorLocalX * sin + anchorLocalY * cos) * S;
-  wrapper.position.set(x - worldDX, y - worldDY, 0);
+  const [anchorLocalX, anchorLocalY] = selectAnchorPoint(vb, jewelleryType);
+  const [px, py] = computeGroupPosition(x, y, anchorLocalX, anchorLocalY, overlay.rotationZ, S);
+  wrapper.position.set(px, py, 0);
 
   renderer.render(scene, camera);
 

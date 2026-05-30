@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Search, Heart, GitCompare, Menu, Sparkles, LayoutDashboard } from "lucide-react";
+import { Search, Heart, GitCompare, Menu, Sparkles, LayoutDashboard, ShoppingBag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSavedItems } from "@/contexts/SavedItemsContext";
 import { useCompare } from "@/contexts/CompareContext";
 import { useShop } from "@/hooks/use-shop";
+import { useCartCount } from "@/hooks/use-cart";
+import { useCustomer } from "@/hooks/use-customer";
 import MobileNav from "./MobileNav";
 
 const navLinks = [
@@ -26,6 +28,8 @@ export default function AppHeader() {
   const { savedItems } = useSavedItems();
   const { compareItems } = useCompare();
   const shop = useShop();
+  const cartCount = useCartCount();
+  const { customer } = useCustomer();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
@@ -126,6 +130,34 @@ export default function AppHeader() {
                   <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 text-[10px] font-semibold bg-primary text-primary-foreground rounded-full flex items-center justify-center">
                     {savedItems.size}
                   </span>
+                )}
+              </button>
+            </Link>
+
+            {/* Cart */}
+            <Link href="/cart">
+              <button
+                className="relative p-2 rounded-xl hover:bg-accent transition-colors"
+                aria-label="Cart"
+              >
+                <ShoppingBag className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 text-[10px] font-semibold bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            </Link>
+
+            {/* Account */}
+            <Link href={customer ? '/account' : '/login'}>
+              <button
+                className="relative p-2 rounded-xl hover:bg-accent transition-colors hidden md:block"
+                aria-label="Account"
+              >
+                <User className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+                {customer && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
                 )}
               </button>
             </Link>

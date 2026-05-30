@@ -1,5 +1,6 @@
 import {
   getDashboardSummary,
+  getFunnelAnalytics,
   getProductDemandSnapshots,
   recordProductSale,
 } from '@luxematch/db';
@@ -53,6 +54,18 @@ intelligenceRoutes.get('/recommendations', async (c) => {
     recommendations: generateInventoryRecommendations(products),
     products,
   });
+});
+
+intelligenceRoutes.get('/funnel', async (c) => {
+  const jewellerId = c.get('shopJewellerId');
+  const daysRaw = c.req.query('days');
+  const days = Math.min(Math.max(Number(daysRaw ?? 30) || 30, 7), 90);
+  const funnel = await getCached(
+    `intelligence:funnel:${jewellerId}:${days}`,
+    60_000,
+    () => getFunnelAnalytics(jewellerId, days),
+  );
+  return sendData(c, funnel);
 });
 
 const SaleBody = z.object({
