@@ -6,6 +6,7 @@ import { cloudinaryRoutes } from '@/lib/api/cloudinary';
 import { embeddingsRoutes } from '@/lib/api/embeddings';
 import { intelligenceRoutes } from '@/lib/api/intelligence';
 import { searchRoutes } from '@/lib/api/search';
+import { jewelllerOrderRoutes } from '@/lib/api/jeweller-orders';
 import { shopRoutes } from '@/lib/api/shop';
 import { tryOnAssetRoutes } from '@/lib/api/tryon-assets';
 import { authCustomerRoutes } from '@/lib/api/auth-customer';
@@ -26,6 +27,7 @@ app.get('/health', (c) =>
 );
 
 app.route('/shop', shopRoutes);
+app.route('/shop/orders', jewelllerOrderRoutes);
 app.route('/cloudinary', cloudinaryRoutes);
 app.route('/intelligence', intelligenceRoutes);
 app.route('/search', searchRoutes);

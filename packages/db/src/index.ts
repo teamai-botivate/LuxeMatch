@@ -75,8 +75,10 @@ export {
 
 export {
   placeOrder, getCustomerOrders, getOrderWithItems, getOrderByNumber,
+  listJewellerOrders, updateOrderStatus,
   type OrderRow, type OrderItemRow, type OrderStatusHistoryRow,
   type OrderWithItems, type PlaceOrderInput, type OrderStatus,
+  type JewellerOrderListItem,
 } from './ecommerce';
 
 export {

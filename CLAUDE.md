@@ -145,6 +145,11 @@ GET    /api/search/suggest              public — Postgres FTS (no embedder hop
 GET    /api/intelligence/summary        PIN — KPI strip + top recommendations
 GET    /api/intelligence/recommendations  PIN — full ranked list
 
+# Jeweller order management (Phase E3)
+GET    /api/shop/orders                 PIN — all orders for this shop (filterable by status)
+GET    /api/shop/orders/:id             PIN — single order with items + status history
+PATCH  /api/shop/orders/:id             PIN — update status (confirmed/packed/shipped/delivered/cancelled)
+
 # Customer e-commerce (all scoped to SHOP_JEWELLER_ID)
 POST   /api/customer/send-otp           public — phone OTP initiation
 POST   /api/customer/verify-otp         public — OTP check, sets lm_customer cookie
@@ -339,8 +344,11 @@ Apply with: Supabase dashboard → SQL Editor → paste `supabase/migrations/000
 | 7 | Try-on calibration tool | ✅ |
 | 8 | Jeweller dashboard + product CRUD + analytics | ✅ |
 | 9.5 | Inventory intelligence recommendations | ✅ (pulled forward) |
-| E-com | Customer auth, cart, checkout, orders, branches | ✅ (added outside plan) |
+| E1 | Customer auth (OTP), cart, checkout, orders, branches | ✅ |
+| E2 | Catalog → cart → checkout wiring, search on real API, hydration fix | ✅ |
+| E3 | Jeweller order management (list + detail + status updates) | ✅ |
 | 9 | Style quiz | ⬜ TODO |
 | 10 | Smoke tests + analytics events | ⬜ TODO |
 | 11 | Deployment docs | ⬜ partial (Render live, docs TODO) |
 | 12 | Auth-readiness cleanup | ⬜ TODO |
+| AWS | S3 + CloudFront + EC2 migration | ⬜ parked — do when instructed |

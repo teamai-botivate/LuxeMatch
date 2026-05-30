@@ -200,6 +200,110 @@ export async function getOrderWithItems(
   };
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Jeweller-side order management (Phase E3)
+// ────────────────────────────────────────────────────────────────────────────
+
+export type JewellerOrderListItem = OrderRow & {
+  customer_phone: string | null;
+  customer_name: string | null;
+  item_count: number;
+};
+
+export async function listJewellerOrders(
+  jewellerId: string,
+  opts: {
+    status?: OrderStatus | 'all';
+    limit?: number;
+    offset?: number;
+  } = {},
+): Promise<{ orders: JewellerOrderListItem[]; total: number }> {
+  const sb = getSupabaseServer();
+  const limit = Math.min(opts.limit ?? 50, 200);
+  const offset = opts.offset ?? 0;
+
+  let q = sb
+    .from('orders')
+    .select('*', { count: 'exact' })
+    .eq('jeweller_id', jewellerId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (opts.status && opts.status !== 'all') {
+    q = q.eq('status', opts.status);
+  }
+
+  const { data: orders, count, error } = await q;
+  if (error) throw error;
+
+  if (!orders || orders.length === 0) {
+    return { orders: [], total: count ?? 0 };
+  }
+
+  // Enrich with customer name/phone and item count in one extra round-trip each.
+  const customerIds = [...new Set((orders as OrderRow[]).map((o) => o.customer_id))];
+  const orderIds = (orders as OrderRow[]).map((o) => o.id);
+
+  const [{ data: customers }, { data: itemCounts }] = await Promise.all([
+    sb.from('customers').select('id, phone, name').in('id', customerIds),
+    sb.from('order_items').select('order_id').in('order_id', orderIds),
+  ]);
+
+  const customerMap = new Map(
+    (customers as { id: string; phone: string | null; name: string | null }[] | null ?? []).map(
+      (c) => [c.id, c],
+    ),
+  );
+  const itemCountMap = new Map<string, number>();
+  for (const item of (itemCounts as { order_id: string }[] | null ?? [])) {
+    itemCountMap.set(item.order_id, (itemCountMap.get(item.order_id) ?? 0) + 1);
+  }
+
+  const enriched: JewellerOrderListItem[] = (orders as OrderRow[]).map((o) => ({
+    ...o,
+    customer_phone: customerMap.get(o.customer_id)?.phone ?? null,
+    customer_name: customerMap.get(o.customer_id)?.name ?? null,
+    item_count: itemCountMap.get(o.id) ?? 0,
+  }));
+
+  return { orders: enriched, total: count ?? enriched.length };
+}
+
+export async function updateOrderStatus(
+  jewellerId: string,
+  orderId: string,
+  status: OrderStatus,
+  note?: string,
+): Promise<OrderRow | null> {
+  const sb = getSupabaseServer();
+
+  // Verify ownership before updating.
+  const { data: existing } = await sb
+    .from('orders')
+    .select('id, status')
+    .eq('jeweller_id', jewellerId)
+    .eq('id', orderId)
+    .maybeSingle();
+  if (!existing) return null;
+
+  const { data: updated, error } = await sb
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
+    .select('*')
+    .single();
+  if (error) throw error;
+
+  // Append to status history.
+  await sb.from('order_status_history').insert({
+    order_id: orderId,
+    status,
+    note: note ?? null,
+  });
+
+  return updated as OrderRow;
+}
+
 export async function getOrderByNumber(
   jewellerId: string,
   orderNumber: string,
