@@ -165,6 +165,93 @@ DELETE /api/customer/cart/:productId    customer-gated — remove item
 DELETE /api/customer/cart               customer-gated — clear cart
 ```
 
+## Image storage + vector search data flow
+
+This is the canonical flow for every product image — both regular product
+photos and transparent AR-ready PNGs. **The flow is the same in dev and in
+production; only the vendor endpoints change.**
+
+```
+Jeweller uploads image
+        │
+        ▼
+  Cloudinary (CDN)                   ← permanent, served to customers
+  luxematch/<jewellerId>/<bucket>/
+  Returns: secure_url, public_id
+        │
+        ▼ (pnpm reindex  OR  POST /api/embeddings/product/:id)
+  Image bytes fetched from Cloudinary URL
+        │
+        ▼
+  Python embedder (apps/embedder)
+  POST /embed/image
+  Model: OpenCLIP ViT-B-32 / laion2b_s34b_b79k
+  Output: 512-d L2-normalised float32 vector
+        │
+        ▼
+  Qdrant Cloud                       ← searchable representation
+  Collection: luxematch_products
+  Point ID: product_id (UUID)
+  Vector: 512-d cosine
+  Payload: { product_id, jeweller_id, slug, category, metal,
+             occasion_tags, price_min, price_max, has_tryon }
+```
+
+**Search flow (customer uploads a photo):**
+```
+Customer image (browser)
+        │
+        ▼ POST /api/search/image  (base64 in JSON body)
+  Hono route decodes → Buffer
+        │
+        ▼
+  Python embedder  POST /embed/image → 512-d query vector
+        │
+        ▼
+  Qdrant ANN search  (must-filter: jeweller_id = ctx.shopJewellerId)
+  Returns: [ { product_id, score }, ... ]
+        │
+        ▼
+  Supabase lookup  getProductsByIds(jewellerId, ids)
+  Returns: ProductWithImages[] with Cloudinary URLs
+        │
+        ▼
+  Browser renders results with real product images from Cloudinary
+```
+
+The **link** between the two stores is `product_id` — it is both the Qdrant
+point ID and the Supabase primary key. `product_embeddings` table mirrors
+which products are indexed (model, dimensions, indexed_at) for bookkeeping.
+
+**AR-ready assets follow the same flow.** Transparent PNGs are uploaded to
+Cloudinary under `luxematch/<jewellerId>/tryon/`, their URLs are stored in
+`product_tryon_assets.asset_url`, and they are embedded (as product images)
+the same way. The AR engine loads the PNG at runtime directly from the
+Cloudinary CDN URL.
+
+## Infrastructure vendors — dev vs production
+
+The data flow is identical in both environments. Only env vars change.
+
+| Concern | Dev / current | Production (when migrating) |
+|---|---|---|
+| Image CDN | Cloudinary (`dyrc4bo4m`) | AWS S3 + CloudFront |
+| Vector DB | Qdrant Cloud (US-West) | Self-hosted Qdrant on AWS EC2/EKS |
+| Relational DB | Supabase Postgres | AWS RDS Postgres (or Supabase on AWS region) |
+| Embedder | Render worker (Python) | AWS EC2 / ECS with GPU, same FastAPI code |
+
+**When migrating**, the only code changes needed are:
+1. Update `CLOUDINARY_*` env vars → AWS S3 + CloudFront equivalents, and
+   update `packages/cloudinary/src/index.ts` to use the S3 SDK
+2. Update `QDRANT_URL` + `QDRANT_API_KEY` env vars to point at the AWS cluster
+3. Update `EMBEDDER_URL` to the new worker endpoint
+4. Update `NEXT_PUBLIC_SUPABASE_URL` + related keys
+5. No changes to `packages/embeddings/`, `packages/qdrant/`, or any search
+   route — they all speak through env-resolved URLs
+
+The `packages/cloudinary/` wrapper is the only package with vendor-specific
+SDK logic. Everything else is vendor-agnostic HTTP.
+
 ## Two cookies, two auth flows
 
 The system has two independent cookie-based sessions:
