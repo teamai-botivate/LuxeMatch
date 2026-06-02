@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/use-cart';
 import { useCustomer } from '@/hooks/use-customer';
+import { trackEvent } from '@/lib/analytics';
 
 function formatINR(v: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v);
@@ -55,6 +56,14 @@ export default function CheckoutPage() {
       });
       const json = (await res.json()) as { data?: { orderNumber: string; orderId: string }; error?: { message: string } };
       if (!res.ok || json.error) { setError(json.error?.message ?? 'Checkout failed'); return; }
+      trackEvent('order_placed', {
+        metadata: {
+          order_number: json.data!.orderNumber,
+          total: finalTotal,
+          delivery_type: deliveryType,
+          item_count: items.length,
+        },
+      });
       router.push(`/checkout/success?order=${json.data!.orderNumber}`);
     } catch {
       setError('Something went wrong. Please try again.');

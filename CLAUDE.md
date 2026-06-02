@@ -35,9 +35,18 @@ pnpm provision-shop       # interactive: creates a new shop's jeweller row,
 pnpm reindex --jeweller-id=<uuid>   # backfill OpenCLIP embeddings into Qdrant
 pnpm reindex --all                  # reindex every jeweller
 
+pnpm check-env            # verify all required env vars are present (CI gate)
+pnpm smoke-test           # ping Supabase + Qdrant + embedder + Cloudinary + PIN
+pnpm test                 # vitest — pure-logic unit tests (tests/*.test.ts)
+
 node scripts/run-migration.mjs      # apply Supabase migrations programmatically
                                     # (alternative to the dashboard SQL editor)
 ```
+
+`check-env`, `smoke-test`, and `reindex` all load `apps/web/.env.local` via
+`tsx --env-file`. `smoke-test` exits 1 if any service is unreachable; run it
+before deploying. `test` runs vitest against `tests/` (currently the
+security-critical `@luxematch/tenant` PIN/cookie/rate-limit logic).
 
 `pnpm reindex` loads env via `tsx --env-file=apps/web/.env.local scripts/reindex.ts`. New CLI scripts that need Supabase/Qdrant access should follow the same pattern.
 
@@ -144,6 +153,13 @@ GET    /api/search/suggest              public — Postgres FTS (no embedder hop
 # Intelligence (Phase 9.5)
 GET    /api/intelligence/summary        PIN — KPI strip + top recommendations
 GET    /api/intelligence/recommendations  PIN — full ranked list
+
+# Analytics (Phase 10)
+POST   /api/analytics/event             public — fire-and-forget event log
+                                        (event_type validated; jeweller_id from ctx;
+                                        product_view → also product_views table,
+                                        tryon_start → also tryon_events table)
+GET    /api/health                      public — pings Supabase + Qdrant, 200/503
 
 # Jeweller order management (Phase E3)
 GET    /api/shop/orders                 PIN — all orders for this shop (filterable by status)
@@ -301,6 +317,31 @@ This applies to the e-commerce layer too: every `customers`, `cart_items`, `orde
 
 **It is heuristic, not ML.** Sparse demo data correctly degrades to low-confidence guidance. Extend the scoring logic in `packages/intelligence/src/index.ts`; the API routes (`apps/web/lib/api/intelligence.ts`) are thin shells.
 
+## Analytics (Phase 10)
+
+`apps/web/lib/analytics.ts` exports `trackEvent(type, { productId?, metadata? })` —
+a fire-and-forget client helper that POSTs to `/api/analytics/event` using
+`navigator.sendBeacon` (falls back to `fetch` with `keepalive`). It never
+throws and never blocks the UI. A per-tab `lm_session_id` lives in
+sessionStorage (resets when the customer walks away — kiosk semantics).
+
+The server route (`apps/web/lib/api/analytics.ts`) validates `event_type`
+against a fixed allowlist, attaches `jeweller_id` from the tenant context
+(never the client), and writes to `analytics_events`. As a convenience it
+**also fans out** `product_view` → `product_views` and `tryon_start` →
+`tryon_events` so the analytics + intelligence aggregations (which read those
+dedicated tables) light up from the same single client call.
+
+Wired across: search submit (`search_text`), product detail mount
+(`product_view`), add-to-cart (`cart_add`, both card + detail), save/unsave
+(in `SavedItemsContext`), compare page open (`compare_opened`), style-quiz
+complete (`style_quiz_completed`), try-on select + capture
+(`tryon_start`/`tryon_capture`), checkout (`order_placed`).
+
+To add a new event type: add it to the `AnalyticsEventType` union in
+`lib/analytics.ts` AND the `EVENT_TYPES` array in `lib/api/analytics.ts` —
+they must stay in sync or the server rejects the event.
+
 ## Realtime sync
 
 `useMultiDeviceSync(jewellerId, callback)` subscribes to Supabase Realtime on three tables (`products`, `product_sales`, `tryon_events`) scoped by `jeweller_id`. When staff updates inventory on one device, the customer catalog and dashboard on other devices refresh without a manual reload. `useRealtimeCatalog` is a lighter variant for customer-facing catalog pages only.
@@ -347,8 +388,8 @@ Apply with: Supabase dashboard → SQL Editor → paste `supabase/migrations/000
 | E1 | Customer auth (OTP), cart, checkout, orders, branches | ✅ |
 | E2 | Catalog → cart → checkout wiring, search on real API, hydration fix | ✅ |
 | E3 | Jeweller order management (list + detail + status updates) | ✅ |
-| 9 | Style quiz | ⬜ TODO |
-| 10 | Smoke tests + analytics events | ⬜ TODO |
+| 9 | Style quiz (real OpenCLIP search + reason chips) | ✅ |
+| 10 | Analytics events + trackEvent + smoke tests + vitest + real /api/health | ✅ |
 | 11 | Deployment docs | ⬜ partial (Render live, docs TODO) |
 | 12 | Auth-readiness cleanup | ⬜ TODO |
 | AWS | S3 + CloudFront + EC2 migration | ⬜ parked — do when instructed |

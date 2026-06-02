@@ -11,6 +11,7 @@ import ImageUploadDropzone from '@/components/search/ImageUploadDropzone';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { adaptProduct, fetchCategories, type ApiCategory, type ApiProduct } from '@/lib/catalog-adapter';
+import { trackEvent } from '@/lib/analytics';
 import type { Product } from '@/lib/mock-data';
 
 // ─── Quiz options ──────────────────────────────────────────────────────────
@@ -169,13 +170,22 @@ export default function StyleQuizPage() {
         json = await res.json();
       }
 
+      let resultCount = 0;
       if (json.error || !json.data) {
         // Graceful fallback — show empty results rather than crashing
         setResults([]);
       } else {
         const adapted = json.data.results.map(r => adaptProduct(r.product, cats));
         setResults(adapted);
+        resultCount = adapted.length;
       }
+      trackEvent('style_quiz_completed', {
+        metadata: {
+          occasion: quiz.occasion, budget: quiz.budget, metal: quiz.metal,
+          category: quiz.category, mood: quiz.mood,
+          with_photo: Boolean(inspirationFile.current), results: resultCount,
+        },
+      });
       setDone(true);
     } catch {
       setResults([]);

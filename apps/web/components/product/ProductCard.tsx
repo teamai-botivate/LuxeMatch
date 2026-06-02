@@ -10,6 +10,7 @@ import { formatINR } from "@/lib/format";
 import { useSavedItems } from "@/contexts/SavedItemsContext";
 import { useCompare } from "@/contexts/CompareContext";
 import { useCart } from "@/hooks/use-cart";
+import { trackEvent } from "@/lib/analytics";
 
 interface ProductCardProps {
   product: Product;
@@ -35,6 +36,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
     setAdding(false);
     if (ok) {
       setAdded(true);
+      trackEvent('cart_add', { productId: product.id });
       setTimeout(() => setAdded(false), 2000);
     } else {
       router.push('/login');

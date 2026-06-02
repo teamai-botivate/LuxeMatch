@@ -8,7 +8,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ARViewport, type ARViewportHandle } from '@/components/ar/ARViewport';
+import { trackEvent } from '@/lib/analytics';
 import { SHOWCASE_AR_PRODUCTS } from '@/lib/showcase-ar-assets';
+
+// Matches a v4 UUID — used to skip analytics product_id for showcase assets.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -133,6 +137,11 @@ export default function TryOnPage() {
     setSelection({ productId, asset });
     setBrowseOpen(false);
     setToast(null);
+    // Only attach a real UUID productId; showcase assets use non-UUID ids.
+    trackEvent('tryon_start', {
+      productId: UUID_RE.test(productId) ? productId : undefined,
+      metadata: { jewellery_type: asset.jewellery_type, device_type: 'web' },
+    });
     try {
       await viewportRef.current?.setProduct(
         asset.asset_url,
@@ -147,6 +156,10 @@ export default function TryOnPage() {
   async function onCapture() {
     const blob = await viewportRef.current?.capture();
     if (!blob) return;
+    trackEvent('tryon_capture', {
+      productId: selection && UUID_RE.test(selection.productId) ? selection.productId : undefined,
+      metadata: { jewellery_type: selection?.asset.jewellery_type },
+    });
     setCaptureUrl(URL.createObjectURL(blob));
   }
 

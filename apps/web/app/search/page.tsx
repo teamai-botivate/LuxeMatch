@@ -9,6 +9,7 @@ import CustomerLayout from '@/components/layout/CustomerLayout';
 import ProductGrid from '@/components/product/ProductGrid';
 import SearchBar from '@/components/search/SearchBar';
 import { adaptProduct, fetchCategories, type ApiCategory, type ApiProduct } from '@/lib/catalog-adapter';
+import { trackEvent } from '@/lib/analytics';
 import { POPULAR_SEARCHES, type Product } from '@/lib/mock-data';
 
 export default function SearchPage() {
@@ -42,6 +43,7 @@ export default function SearchPage() {
       if ('error' in json) { setError(json.error.message); return; }
       const adapted = json.data.results.map((r) => adaptProduct(r.product, cats));
       setResults(adapted);
+      trackEvent('search_text', { metadata: { query: q, results: adapted.length } });
     } catch {
       if (q === lastQuery.current) setResults([]);
     } finally {

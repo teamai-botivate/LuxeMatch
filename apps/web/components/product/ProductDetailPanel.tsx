@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Heart, GitCompare, Sparkles, ShoppingBag, Zap } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import TrustBadge from "@/components/ui/TrustBadge";
 import PriceDisplay from "@/components/ui/PriceDisplay";
@@ -12,6 +12,7 @@ import { useShop } from "@/hooks/use-shop";
 import { useSavedItems } from "@/contexts/SavedItemsContext";
 import { useCompare } from "@/contexts/CompareContext";
 import { useCart } from "@/hooks/use-cart";
+import { trackEvent } from "@/lib/analytics";
 
 interface ProductDetailPanelProps {
   product: Product;
@@ -28,12 +29,24 @@ export default function ProductDetailPanel({ product }: ProductDetailPanelProps)
   const saved = isSaved(product.id);
   const compared = isCompared(product.id);
 
+  // Log a product view once per mount. The /catalog/[slug] page is the only
+  // place this panel renders, so this is the canonical view signal.
+  useEffect(() => {
+    trackEvent('product_view', { productId: product.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
+
   async function handleAddToCart() {
     setAdding(true);
     const ok = await addToCart(product.id);
     setAdding(false);
-    if (ok) { setAdded(true); setTimeout(() => setAdded(false), 2000); }
-    else router.push('/login');
+    if (ok) {
+      setAdded(true);
+      trackEvent('cart_add', { productId: product.id });
+      setTimeout(() => setAdded(false), 2000);
+    } else {
+      router.push('/login');
+    }
   }
 
   const specs = [

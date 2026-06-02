@@ -55,7 +55,16 @@ export {
   type TryOnAssetRow,
 } from './media';
 
-export { logSearchEvent, type SearchEventInput } from './events';
+export {
+  logSearchEvent,
+  logAnalyticsEvent,
+  logProductView,
+  logTryonEvent,
+  type SearchEventInput,
+  type AnalyticsEventInput,
+  type ProductViewInput,
+  type TryonEventInput,
+} from './events';
 
 export {
   getBranches, getBranchById, type BranchRow,

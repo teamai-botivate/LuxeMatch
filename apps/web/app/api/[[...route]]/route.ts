@@ -12,6 +12,8 @@ import { tryOnAssetRoutes } from '@/lib/api/tryon-assets';
 import { authCustomerRoutes } from '@/lib/api/auth-customer';
 import { cartRoutes } from '@/lib/api/cart-routes';
 import { customerOrderRoutes } from '@/lib/api/customer-orders';
+import { analyticsRoutes } from '@/lib/api/analytics';
+import { healthCheck } from '@/lib/api/health';
 
 export const runtime = 'nodejs';
 
@@ -19,12 +21,9 @@ type Vars = { Variables: { shopJewellerId: string } };
 
 const app = new Hono<Vars>().basePath('/api');
 
-app.get('/health', (c) =>
-  c.json({
-    ok: true,
-    timestamp: new Date().toISOString(),
-  }),
-);
+// Health endpoint pings core services (Supabase + Qdrant). Returns 200 when
+// they're reachable, 503 otherwise. Used by smoke tests and uptime monitors.
+app.get('/health', healthCheck);
 
 app.route('/shop', shopRoutes);
 app.route('/shop/orders', jewelllerOrderRoutes);
@@ -33,6 +32,7 @@ app.route('/intelligence', intelligenceRoutes);
 app.route('/search', searchRoutes);
 app.route('/tryon-assets', tryOnAssetRoutes);
 app.route('/embeddings', embeddingsRoutes);
+app.route('/analytics', analyticsRoutes);
 // E-commerce routes
 // authCustomerRoutes handles: /send-otp /verify-otp /me /logout /profile
 app.route('/customer', authCustomerRoutes);

@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
+import { trackEvent } from "@/lib/analytics";
+
 interface SavedItemsContextType {
   savedItems: Set<string>;
   toggleSave: (productId: string) => void;
@@ -29,8 +31,11 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
   const toggleSave = useCallback((productId: string) => {
     setSavedItems(prev => {
       const next = new Set(prev);
-      if (next.has(productId)) next.delete(productId);
+      const wasSaved = next.has(productId);
+      if (wasSaved) next.delete(productId);
       else next.add(productId);
+      // Fire-and-forget analytics outside the state value computation.
+      trackEvent(wasSaved ? 'product_unsaved' : 'product_saved', { productId });
       return next;
     });
   }, []);

@@ -16,9 +16,14 @@
     "provision-shop": "tsx scripts/provision-shop.ts",
     "reindex": "tsx --env-file=apps/web/.env.local scripts/reindex.ts",
     "seed:intelligence": "tsx --env-file=apps/web/.env.local scripts/seed-intelligence.ts",
-    "rollup:intelligence": "tsx --env-file=apps/web/.env.local scripts/seasonal-rollup.ts"
+    "rollup:intelligence": "tsx --env-file=apps/web/.env.local scripts/seasonal-rollup.ts",
+    "check-env": "tsx --env-file=apps/web/.env.local scripts/check-env.ts",
+    "smoke-test": "tsx --env-file=apps/web/.env.local scripts/smoke-test.ts",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "@luxematch/cloudinary": "workspace:*",
+    "@luxematch/config": "workspace:*",
     "@luxematch/db": "workspace:*",
     "@luxematch/embeddings": "workspace:*",
     "@luxematch/qdrant": "workspace:*",
@@ -26,6 +31,7 @@
     "@types/node": "^22.10.5",
     "prettier": "^3.3.3",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
   }
 }

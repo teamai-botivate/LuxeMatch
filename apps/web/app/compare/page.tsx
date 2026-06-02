@@ -4,10 +4,12 @@ import CustomerLayout from "@/components/layout/CustomerLayout";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { motion } from "motion/react";
 import { X, Package, Plus, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCompare } from "@/contexts/CompareContext";
+import { trackEvent } from "@/lib/analytics";
 import { MOCK_PRODUCTS } from "@/lib/mock-data";
 import { formatINR } from "@/lib/format";
 import EmptyState from "@/components/ui/EmptyState";
@@ -27,6 +29,14 @@ export default function ComparePage() {
   const router = useRouter();
   const { compareItems, toggleCompare, clearCompare, canAddMore } = useCompare();
   const products = MOCK_PRODUCTS.filter(p => compareItems.has(p.id));
+
+  // Fire once when the compare view is opened with items present.
+  useEffect(() => {
+    if (compareItems.size > 0) {
+      trackEvent('compare_opened', { metadata: { count: compareItems.size } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (products.length === 0) {
     return (
