@@ -42,3 +42,33 @@ services:
         value: luxematch_products
       - key: JEWELLERY_AI_URL
         value: https://botivate2026-jewellery.hf.space
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: NODE_ENV
+        value: production
+
+  # OpenCLIP embedder — Python FastAPI sidecar. Provides /embed/text|image|
+  # hybrid used by search + reindex. CPU on Render is slow (~150ms/embed) but
+  # functional; a GPU host (AWS g4dn — deferred) drops this to ~5ms.
+  # NOTE: free tier is 512 MB RAM which is too small for the ~350 MB model +
+  # torch runtime. Use the `starter` plan or larger.
+  - type: web
+    name: luxematch-embedder
+    runtime: python
+    plan: starter
+    autoDeploy: true
+    rootDir: apps/embedder
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn embedder:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      # Shared secret — must match EMBEDDER_API_KEY on the web service so the
+      # web app can authenticate to the embedder.
+      - key: EMBEDDER_API_KEY
+        sync: false
+      # The embedder is called server-to-server from the Next.js API, so
+      # browser CORS is irrelevant; lock it to nothing in prod.
+      - key: EMBEDDER_ALLOWED_ORIGINS
+        value: ""

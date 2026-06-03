@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { handle } from 'hono/vercel';
 
 import { catalogRoutes } from '@/lib/api/catalog';
@@ -20,6 +21,37 @@ export const runtime = 'nodejs';
 type Vars = { Variables: { shopJewellerId: string } };
 
 const app = new Hono<Vars>().basePath('/api');
+
+// ── CORS ────────────────────────────────────────────────────────────────────
+// The browser app calls /api from the same origin, so CORS is mostly a guard
+// against other sites driving the authenticated API. ALLOWED_ORIGINS is a
+// comma-separated allow-list. When set, only those origins get CORS headers
+// (with credentials, so the lm_pin / lm_customer cookies flow). When unset,
+// we allow same-origin requests (no Origin header) and, in development only,
+// any origin for convenience. In production an unknown Origin gets no CORS
+// headers and the browser blocks the response.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+const isProd = process.env.NODE_ENV === 'production';
+
+app.use(
+  '/*',
+  cors({
+    origin: (origin) => {
+      if (!origin) return origin; // same-origin / server-to-server
+      if (allowedOrigins.length > 0) {
+        return allowedOrigins.includes(origin) ? origin : null;
+      }
+      // No allow-list configured: permissive in dev, locked down in prod.
+      return isProd ? null : origin;
+    },
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 
 // Health endpoint pings core services (Supabase + Qdrant). Returns 200 when
 // they're reachable, 503 otherwise. Used by smoke tests and uptime monitors.

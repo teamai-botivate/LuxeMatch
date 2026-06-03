@@ -21,6 +21,12 @@ const ServerEnvSchema = z.object({
   // ViT-B-32 / laion2b_s34b_b79k / 512-d.
   EMBEDDER_URL: z.string().url('EMBEDDER_URL must be a valid URL'),
   EMBEDDER_API_KEY: z.string().optional(),
+  // CORS allow-list (comma-separated origins). When unset, the API allows the
+  // same-origin browser app only (dev convenience). In production set this to
+  // the deployed web origin(s), e.g. "https://shop.luxematch.in".
+  ALLOWED_ORIGINS: z.string().optional(),
+  // Standard Node hint — used to decide whether CORS rejects unknown origins.
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 
 const ClientEnvSchema = z.object({

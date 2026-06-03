@@ -60,7 +60,21 @@ When the dev server returns 404s for every chunk after a config change: `rm -rf 
 
 ## Deployment
 
-`apps/web` is deployed on Render. Render uses Corepack + pnpm; the build/start commands assume `pnpm` is available on PATH. The Python embedder needs a separate Render worker/service with the OpenCLIP weights cached. See `SETUP.md` for step-by-step.
+Both services are described in [`render.yaml`](render.yaml) as a Render
+Blueprint:
+- `luxematch-web` — Node, runs Next.js + Hono. Corepack + pnpm. Health check `/api/health`.
+- `luxematch-embedder` — Python, `apps/embedder`, `uvicorn embedder:app`. Health check `/health`. Needs the `starter` plan or larger (free tier's 512 MB RAM can't hold torch + the ~350 MB model).
+
+`EMBEDDER_API_KEY` must be **identical** on both services. `ALLOWED_ORIGINS`
++ `NODE_ENV=production` lock down CORS on the web service.
+
+- **Operator deploy guide:** [`docs/deployment.md`](docs/deployment.md) — cloud setup, first-deploy checklist, per-shop install, rollback.
+- **Dev/testing guide:** `SETUP.md` — local run + manual test flows.
+- **Annotated prod env:** [`apps/web/.env.production.example`](apps/web/.env.production.example) — every var tagged SERVER ONLY / FRONTEND SAFE / RUNTIME.
+
+> **AWS migration is deferred.** UI/UX refinement comes first. When it happens,
+> only env vars + `packages/cloudinary` change — see the "Infrastructure vendors"
+> section below.
 
 ## Workspace shape
 
@@ -101,10 +115,10 @@ apps/web/public/All_jewelleries/   # Temporary transparent PNGs for AR demo
 
 ## API surface (current)
 
-All routes are mounted in `apps/web/app/api/[[...route]]/route.ts`. PIN-gated = requires `lm_pin` cookie. Customer-gated = requires `lm_customer` cookie.
+All routes are mounted in `apps/web/app/api/[[...route]]/route.ts`. PIN-gated = requires `lm_pin` cookie. Customer-gated = requires `lm_customer` cookie. CORS is applied app-wide via `hono/cors` — `ALLOWED_ORIGINS` allow-list, credentialed; `NODE_ENV=production` rejects unknown origins.
 
 ```
-GET    /api/health
+GET    /api/health                      public — Supabase+Qdrant ping, masked shop id, 200/503
 
 # Shop (jeweller info + back-office)
 GET    /api/shop                        public — "Welcome to <store>" header data
@@ -159,7 +173,6 @@ POST   /api/analytics/event             public — fire-and-forget event log
                                         (event_type validated; jeweller_id from ctx;
                                         product_view → also product_views table,
                                         tryon_start → also tryon_events table)
-GET    /api/health                      public — pings Supabase + Qdrant, 200/503
 
 # Jeweller order management (Phase E3)
 GET    /api/shop/orders                 PIN — all orders for this shop (filterable by status)
@@ -390,6 +403,8 @@ Apply with: Supabase dashboard → SQL Editor → paste `supabase/migrations/000
 | E3 | Jeweller order management (list + detail + status updates) | ✅ |
 | 9 | Style quiz (real OpenCLIP search + reason chips) | ✅ |
 | 10 | Analytics events + trackEvent + smoke tests + vitest + real /api/health | ✅ |
-| 11 | Deployment docs | ⬜ partial (Render live, docs TODO) |
-| 12 | Auth-readiness cleanup | ⬜ TODO |
+| 11 | Deployment config — render.yaml (web + embedder), CORS lockdown, docs/deployment.md, .env.production.example, health w/ shop id | ✅ |
+| 12 | Auth-readiness cleanup + PIN hardening | ⬜ TODO |
+| — | UI/UX refinement pass | ⬜ in progress (before AWS) |
+| AWS | S3 + CloudFront + EC2 migration | ⬜ deferred until after UI/UX |
 | AWS | S3 + CloudFront + EC2 migration | ⬜ parked — do when instructed |

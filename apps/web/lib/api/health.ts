@@ -34,11 +34,17 @@ export async function healthCheck(c: Context) {
     services.qdrant = 'error';
   }
 
+  // Mask the shop id so health is safe to expose to uptime monitors — first
+  // 8 chars are enough to confirm which shop a device is bound to.
+  const rawShopId = process.env.SHOP_JEWELLER_ID ?? '';
+  const maskedShopId = rawShopId ? `${rawShopId.slice(0, 8)}…` : null;
+
   const ok = services.supabase === 'ok' && services.qdrant === 'ok';
   return c.json(
     {
       ok,
       timestamp: new Date().toISOString(),
+      shop: { id: maskedShopId },
       services,
     },
     ok ? 200 : 503,
