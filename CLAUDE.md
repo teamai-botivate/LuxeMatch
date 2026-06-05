@@ -297,6 +297,15 @@ The system has two independent cookie-based sessions:
 
 Both use HMAC-SHA-256 via `crypto.subtle` so they work in both Node and Edge runtimes. PIN hashing (scrypt) is Node-only and lives in `@luxematch/tenant/server` — never import that from middleware or any Edge code.
 
+### PIN hardening (Phase 12)
+
+- **Rate limit**: `POST /api/shop/unlock` allows 5 failures / 60s per `(jeweller_id, IP)` bucket (`isPinLocked`/`registerPinFailure`/`clearPinFailures` in `@luxematch/tenant`). The IP comes from `x-forwarded-for` / `x-real-ip`, falling back to `unknown`.
+- **Audit**: every attempt (success + failure) is written to `pin_audit_events (jeweller_id, attempt_ip, success, created_at)` via `logPinAudit()` — fire-and-forget, never blocks the unlock.
+- **Cookie**: `HttpOnly`, `SameSite=Strict`, `Secure` in production, TTL = `LM_PIN_COOKIE_TTL_SECONDS` (4h default).
+- **Lock button**: `JewellerLayout` sidebar footer → `POST /api/shop/lock` (clears `lm_pin`) → `/jeweller/unlock`.
+- **Idle-lock**: `apps/web/middleware.ts` re-checks the cookie TTL on every `/jeweller/*` request (`verifyPinCookie`) and redirects to `/jeweller/unlock` when expired.
+- **Future path**: multi-staff Supabase Auth (the PIN stays as the fast in-shop re-lock) is specced in [docs/auth-readiness.md](docs/auth-readiness.md) — `jeweller_staff` table, `sold_by_staff_id`, RLS via `auth.uid()` join, localStorage deps to remove, middleware hook order.
+
 ## Tenancy enforcement (the most important invariant)
 
 Every read and write must be filtered by the device's `SHOP_JEWELLER_ID`. New routes and helpers must check each layer:
@@ -404,7 +413,7 @@ Apply with: Supabase dashboard → SQL Editor → paste `supabase/migrations/000
 | 9 | Style quiz (real OpenCLIP search + reason chips) | ✅ |
 | 10 | Analytics events + trackEvent + smoke tests + vitest + real /api/health | ✅ |
 | 11 | Deployment config — render.yaml (web + embedder), CORS lockdown, docs/deployment.md, .env.production.example, health w/ shop id | ✅ |
-| 12 | Auth-readiness cleanup + PIN hardening | ⬜ TODO |
+| 12 | Auth-readiness + PIN hardening (audit log, per-IP rate limit, lock button, idle-lock, docs/auth-readiness.md) | ✅ |
 | — | UI/UX refinement pass | ⬜ in progress (before AWS) |
-| AWS | S3 + CloudFront + EC2 migration | ⬜ deferred until after UI/UX |
+| — | DB + storage connection, real asset upload | ⬜ next |
 | AWS | S3 + CloudFront + EC2 migration | ⬜ parked — do when instructed |

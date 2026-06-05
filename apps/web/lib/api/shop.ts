@@ -5,6 +5,7 @@ import {
   getJewellerSettings,
   getShopAnalytics,
   getShopMetrics,
+  logPinAudit,
   updateJewellerInfo,
   updateJewellerPinHash,
 } from '@luxematch/db';
@@ -63,7 +64,17 @@ const UnlockBody = z.object({ pin: PinSchema });
 shopRoutes.post('/unlock', zValidator('json', UnlockBody), async (c) => {
   const env = getServerEnv();
   const jewellerId = c.get('shopJewellerId');
-  const lockKey = `unlock:${jewellerId}`;
+
+  // Derive the client IP from the proxy headers Render/Vercel set. Falls back
+  // to 'unknown' so the rate-limit key is still stable on local dev.
+  const ip =
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
+    c.req.header('x-real-ip') ||
+    'unknown';
+
+  // Rate-limit per (jeweller, IP): 5 failures / 60s. A shared device on one
+  // network gets one bucket; an attacker hammering from one IP is throttled.
+  const lockKey = `unlock:${jewellerId}:${ip}`;
 
   const lockState = isPinLocked(lockKey);
   if (lockState.locked) {
@@ -85,6 +96,10 @@ shopRoutes.post('/unlock', zValidator('json', UnlockBody), async (c) => {
   }
 
   const ok = verifyPin(pin, jeweller.pin_hash);
+
+  // Audit every attempt (fire-and-forget) with the originating IP.
+  void logPinAudit({ jewellerId, attemptIp: ip, success: ok });
+
   if (!ok) {
     const r = registerPinFailure(lockKey);
     if (r.locked) {

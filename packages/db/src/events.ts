@@ -112,3 +112,28 @@ export async function logTryonEvent(input: TryonEventInput): Promise<void> {
     console.error('[tryon_events] log failed', err);
   }
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// PIN audit — every unlock attempt (success + failure) with the originating
+// IP. Feeds the future auth-readiness work (lockout forensics, brute-force
+// detection). Fire-and-forget so it never blocks the unlock path.
+// ────────────────────────────────────────────────────────────────────────────
+
+export type PinAuditInput = {
+  jewellerId: string;
+  attemptIp?: string | null;
+  success: boolean;
+};
+
+export async function logPinAudit(input: PinAuditInput): Promise<void> {
+  try {
+    const sb = getSupabaseServer();
+    await sb.from('pin_audit_events').insert({
+      jeweller_id: input.jewellerId,
+      attempt_ip: input.attemptIp ?? null,
+      success: input.success,
+    });
+  } catch (err) {
+    console.error('[pin_audit_events] log failed', err);
+  }
+}

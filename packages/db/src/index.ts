@@ -60,10 +60,12 @@ export {
   logAnalyticsEvent,
   logProductView,
   logTryonEvent,
+  logPinAudit,
   type SearchEventInput,
   type AnalyticsEventInput,
   type ProductViewInput,
   type TryonEventInput,
+  type PinAuditInput,
 } from './events';
 
 export {

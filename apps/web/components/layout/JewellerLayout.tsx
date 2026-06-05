@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { LayoutDashboard, Package, BarChart3, Settings, ArrowLeft, Menu, Lightbulb, ShoppingBag } from "lucide-react";
+import { LayoutDashboard, Package, BarChart3, Settings, ArrowLeft, Menu, Lightbulb, ShoppingBag, Lock } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard", href: "/jeweller/dashboard", icon: LayoutDashboard },
@@ -25,12 +25,28 @@ function getJewellerData() {
 
 export default function JewellerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [locking, setLocking] = useState(false);
   const [jeweller, setJeweller] = useState<{ storeName: string; ownerName: string } | null>(null);
 
   useEffect(() => {
     setJeweller(getJewellerData());
   }, [pathname]);
+
+  // Clears the lm_pin cookie server-side, then sends the device back to the
+  // unlock screen. One-tap "leave jeweller mode" for shared shop devices.
+  async function lockShopMode() {
+    setLocking(true);
+    try {
+      await fetch('/api/shop/lock', { method: 'POST' });
+    } catch {
+      /* even if the request fails, redirect — the cookie TTL still expires */
+    } finally {
+      router.push('/jeweller/unlock');
+      router.refresh();
+    }
+  }
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -69,14 +85,24 @@ export default function JewellerLayout({ children }: { children: React.ReactNode
         })}
       </nav>
 
-      {/* Back to Store */}
-      <div className="px-3 py-4 border-t border-sidebar-border">
+      {/* Back to Store + Lock shop mode */}
+      <div className="px-3 py-4 border-t border-sidebar-border space-y-1">
         <Link href="/">
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-all cursor-pointer">
             <ArrowLeft className="w-4 h-4" />
             Back to Store
           </div>
         </Link>
+        <button
+          type="button"
+          onClick={lockShopMode}
+          disabled={locking}
+          data-testid="button-lock-shop"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Lock className="w-4 h-4" />
+          {locking ? "Locking…" : "Lock shop mode"}
+        </button>
       </div>
     </div>
   );
