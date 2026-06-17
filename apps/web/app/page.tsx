@@ -2,12 +2,20 @@
 
 import CustomerLayout from "@/components/layout/CustomerLayout";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Sparkles, ArrowRight, Shield, Award, Camera, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/product/ProductCard";
-import { MOCK_PRODUCTS, MOCK_COLLECTIONS, MOCK_OCCASIONS, getFeaturedProducts } from "@/lib/mock-data";
+import { MOCK_OCCASIONS } from "@/lib/mock-data";
+import type { Collection, Product } from "@/lib/mock-data";
+import {
+  adaptProduct,
+  fetchCategories,
+  fetchCollections,
+  fetchProducts,
+} from "@/lib/catalog-adapter";
 
 const trustItems = [
   { icon: Shield, label: "BIS Hallmarked", desc: "Every piece certified" },
@@ -16,9 +24,51 @@ const trustItems = [
   { icon: Users, label: "Staff Assisted", desc: "Guided showroom experience" },
 ];
 
+// Collections returned by the API carry no product_count; the home cards show
+// it cosmetically, so default to 0 and hide the count when unknown.
+function adaptCollection(c: {
+  id: string; slug: string; name: string;
+  description: string | null; image_url: string | null;
+}): Collection {
+  return {
+    id: c.id,
+    slug: c.slug,
+    name: c.name,
+    description: c.description ?? "",
+    imageUrl: c.image_url ?? "",
+    productCount: 0,
+  };
+}
+
 export default function HomePage() {
   const router = useRouter();
-  const featured = getFeaturedProducts().slice(0, 8);
+  const [featured, setFeatured] = useState<Product[]>([]);
+  const [more, setMore] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [categories, featuredRes, latestRes, cols] = await Promise.all([
+        fetchCategories(),
+        fetchProducts({ featured: true, limit: 8 }),
+        fetchProducts({ limit: 12 }),
+        fetchCollections(),
+      ]);
+      if (cancelled) return;
+      const featuredProducts = featuredRes.products.map((p) => adaptProduct(p, categories));
+      // Fall back to the latest products if the shop hasn't flagged any featured.
+      const latest = latestRes.products.map((p) => adaptProduct(p, categories));
+      const featuredList = featuredProducts.length > 0 ? featuredProducts : latest.slice(0, 8);
+      const featuredIds = new Set(featuredList.map((p) => p.id));
+      setFeatured(featuredList);
+      setMore(latest.filter((p) => !featuredIds.has(p.id)).slice(0, 8));
+      setCollections(cols.map(adaptCollection));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <CustomerLayout>
@@ -93,32 +143,31 @@ export default function HomePage() {
           
           
           
+        {collections.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-5" style={{ height: "clamp(auto, 52vw, 560px)" }}>
           {/* Featured — col-span-3 */}
-          {MOCK_COLLECTIONS[0] && (
+          {collections[0] && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              onClick={() => router.push(`/collections/${MOCK_COLLECTIONS[0]!.slug}`)}
+              onClick={() => router.push(`/collections/${collections[0]!.slug}`)}
               className="md:col-span-3 relative overflow-hidden rounded-2xl cursor-pointer group"
               style={{ minHeight: 260, height: "100%" }}
-              data-testid={`card-collection-${MOCK_COLLECTIONS[0]!.id}`}
+              data-testid={`card-collection-${collections[0]!.id}`}
             >
               <img
-                src={MOCK_COLLECTIONS[0]!.imageUrl}
-                alt={MOCK_COLLECTIONS[0]!.name}
+                src={collections[0]!.imageUrl}
+                alt={collections[0]!.name}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute bottom-0 left-0 right-0 p-6">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-primary/90 bg-primary/15 border border-primary/20 rounded-full px-2.5 py-1 mb-3 inline-block">Featured</span>
-                <p className="font-semibold text-white text-xl md:text-2xl">{MOCK_COLLECTIONS[0]!.name}</p>
-                <p className="text-white/65 text-sm mt-1.5 max-w-xs leading-relaxed">{MOCK_COLLECTIONS[0]!.description}</p>
+                <p className="font-semibold text-white text-xl md:text-2xl">{collections[0]!.name}</p>
+                <p className="text-white/65 text-sm mt-1.5 max-w-xs leading-relaxed">{collections[0]!.description}</p>
                 <div className="flex items-center gap-2 mt-3">
-                  <span className="text-xs text-white/50">{MOCK_COLLECTIONS[0]!.productCount} pieces</span>
-                  <span className="text-white/30">·</span>
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-1 group-hover:translate-x-0">
                     Explore <ArrowRight className="w-3 h-3" />
                   </span>
@@ -129,7 +178,7 @@ export default function HomePage() {
 
           {/* Two stacked — col-span-2 */}
           <div className="md:col-span-2 flex flex-col gap-4 md:gap-5">
-            {MOCK_COLLECTIONS.slice(1, 3).map((col, i) => (
+            {collections.slice(1, 3).map((col, i) => (
               <motion.div
                 key={col.id}
                 initial={{ opacity: 0, y: 16 }}
@@ -150,7 +199,6 @@ export default function HomePage() {
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <p className="font-semibold text-white text-base">{col.name}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-white/55">{col.productCount} pieces</p>
                     <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-1 group-hover:translate-x-0">
                       Explore <ArrowRight className="w-2.5 h-2.5" />
                     </span>
@@ -160,6 +208,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+        )}
       </section>
 
       {/* Trending Products */}
@@ -178,6 +227,9 @@ export default function HomePage() {
             <ProductCard key={p.id} product={p} index={i} />
           ))}
         </div>
+        {featured.length === 0 && (
+          <p className="text-sm text-muted-foreground">No featured pieces yet — explore the full catalog.</p>
+        )}
       </section>
 
       {/* Shop by Occasion */}
@@ -242,17 +294,19 @@ export default function HomePage() {
       </section>
 
       {/* More Featured Products */}
+      {more.length > 0 && (
       <section className="py-16 md:py-24 px-4 md:px-6 lg:px-12 max-w-[1400px] mx-auto">
         <div className="mb-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">Discover</p>
           <h2 className="text-2xl font-medium tracking-tight">More to Explore</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          {MOCK_PRODUCTS.slice(4, 12).map((p, i) => (
+          {more.map((p, i) => (
             <ProductCard key={p.id} product={p} index={i} />
           ))}
         </div>
       </section>
+      )}
 
       {/* Trust Signals */}
       <section className="py-12 px-4 md:px-6 lg:px-12 max-w-[1400px] mx-auto border-t border-border">

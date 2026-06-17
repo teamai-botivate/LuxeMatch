@@ -110,6 +110,27 @@ export async function fetchProducts(params?: {
   }
 }
 
+export type ApiCollection = {
+  id: string;
+  jeweller_id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  sort_order: number;
+};
+
+export async function fetchCollections(): Promise<ApiCollection[]> {
+  try {
+    const res = await fetch('/api/collections', { cache: 'no-store' });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { data?: ApiCollection[] };
+    return json.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchProductBySlug(slug: string): Promise<ApiProduct | null> {
   try {
     const res = await fetch(`/api/products/${slug}`, { cache: 'no-store' });

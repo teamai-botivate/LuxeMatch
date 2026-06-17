@@ -15,7 +15,7 @@ const CompareContext = createContext<CompareContextType | null>(null);
 
 function loadFromStorage(): Set<string> {
   try {
-    const raw = localStorage.getItem("luxematch_compare");
+    const raw = sessionStorage.getItem("luxematch_compare");
     if (raw) return new Set(JSON.parse(raw) as string[]);
   } catch {}
   return new Set();
@@ -26,7 +26,7 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    localStorage.setItem("luxematch_compare", JSON.stringify([...compareItems]));
+    sessionStorage.setItem("luxematch_compare", JSON.stringify([...compareItems]));
   }, [compareItems]);
 
   const toggleCompare = useCallback((productId: string) => {

@@ -15,7 +15,7 @@ const SavedItemsContext = createContext<SavedItemsContextType | null>(null);
 
 function loadFromStorage(): Set<string> {
   try {
-    const raw = localStorage.getItem("luxematch_saved");
+    const raw = sessionStorage.getItem("luxematch_saved");
     if (raw) return new Set(JSON.parse(raw) as string[]);
   } catch {}
   return new Set();
@@ -25,7 +25,7 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
   const [savedItems, setSavedItems] = useState<Set<string>>(loadFromStorage);
 
   useEffect(() => {
-    localStorage.setItem("luxematch_saved", JSON.stringify([...savedItems]));
+    sessionStorage.setItem("luxematch_saved", JSON.stringify([...savedItems]));
   }, [savedItems]);
 
   const toggleSave = useCallback((productId: string) => {

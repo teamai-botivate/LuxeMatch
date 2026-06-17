@@ -58,6 +58,24 @@ export type ProductDemandSnapshot = {
   lastSoldAt: string | null;
 };
 
+/**
+ * Seasonal windows are stored as recurring MONTH/DAY anchors (1-based month),
+ * NOT absolute dates — so the same definitions keep working every year. The
+ * concrete `startsAt`/`endsAt` for the current cycle are computed relative to
+ * `now` in `getUpcomingSeason` (handling year-wraparound for windows that span
+ * a year boundary or whose start has already passed this year).
+ */
+export type SeasonalWindowDef = {
+  label: string;
+  /** 1-based month + day-of-month for the window start. */
+  start: { month: number; day: number };
+  /** 1-based month + day-of-month for the window end. */
+  end: { month: number; day: number };
+  tags: string[];
+  stockFocus: string[];
+};
+
+/** A seasonal window resolved to concrete ISO dates for a specific cycle. */
 export type SeasonalWindow = {
   label: string;
   startsAt: string;
@@ -66,42 +84,70 @@ export type SeasonalWindow = {
   stockFocus: string[];
 };
 
-export const INDIAN_SEASONAL_WINDOWS: SeasonalWindow[] = [
+export const INDIAN_SEASONAL_WINDOWS: SeasonalWindowDef[] = [
   {
     label: 'Wedding season',
-    startsAt: '2026-10-15',
-    endsAt: '2026-12-20',
+    start: { month: 10, day: 15 },
+    end: { month: 12, day: 20 },
     tags: ['wedding', 'bridal'],
     stockFocus: ['necklace', 'set', 'bangle', 'earring', 'choker'],
   },
   {
     label: 'Festive season',
-    startsAt: '2026-09-15',
-    endsAt: '2026-11-15',
+    start: { month: 9, day: 15 },
+    end: { month: 11, day: 15 },
     tags: ['festival'],
     stockFocus: ['gold', 'bangle', 'earring', 'necklace', 'daily'],
   },
   {
     label: 'Gift season',
-    startsAt: '2026-07-15',
-    endsAt: '2026-08-31',
+    start: { month: 7, day: 15 },
+    end: { month: 8, day: 31 },
     tags: ['gift', 'daily'],
     stockFocus: ['pendant', 'earring', 'ring', 'rose_gold'],
   },
 ];
 
+function isoDate(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/**
+ * Resolve a recurring window definition to the next concrete cycle relative to
+ * `now`. If this year's start has already passed, roll to next year's cycle. End
+ * dates that fall before the start (e.g. a Dec→Jan window) roll into the
+ * following year.
+ */
+function resolveWindow(def: SeasonalWindowDef, now: Date): { window: SeasonalWindow; startsMs: number } {
+  const baseYear = now.getUTCFullYear();
+  const startThisYear = Date.UTC(baseYear, def.start.month - 1, def.start.day);
+  const nowMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const startYear = startThisYear >= nowMs ? baseYear : baseYear + 1;
+  const startsMs = Date.UTC(startYear, def.start.month - 1, def.start.day);
+  // End rolls to the next year if it sorts before the start within a calendar year.
+  const endYear = def.end.month < def.start.month
+    || (def.end.month === def.start.month && def.end.day < def.start.day)
+    ? startYear + 1
+    : startYear;
+  return {
+    startsMs,
+    window: {
+      label: def.label,
+      startsAt: isoDate(startYear, def.start.month, def.start.day),
+      endsAt: isoDate(endYear, def.end.month, def.end.day),
+      tags: def.tags,
+      stockFocus: def.stockFocus,
+    },
+  };
+}
+
 export function getUpcomingSeason(
   now = new Date(),
-  windows: SeasonalWindow[] = INDIAN_SEASONAL_WINDOWS,
+  windows: SeasonalWindowDef[] = INDIAN_SEASONAL_WINDOWS,
 ): SeasonalWindow | null {
-  const nowMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   return (
     windows
-      .map((window) => ({
-        window,
-        startsMs: Date.parse(`${window.startsAt}T00:00:00.000Z`),
-      }))
-      .filter(({ startsMs }) => startsMs >= nowMs)
+      .map((def) => resolveWindow(def, now))
       .sort((a, b) => a.startsMs - b.startsMs)[0]?.window ?? null
   );
 }
