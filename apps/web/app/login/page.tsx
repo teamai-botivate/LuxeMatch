@@ -124,12 +124,13 @@ export default function LoginPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">We&apos;ve sent a 6-digit OTP to {normalizedEmail}.</p>
+                <p className="text-sm text-muted-foreground">We&apos;ve sent a one-time code to {normalizedEmail}.</p>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium">Enter OTP</label>
                   <Input
-                    type="text" inputMode="numeric" maxLength={6} placeholder="6-digit OTP"
-                    value={otp} onChange={e => setOtp(e.target.value)}
+                    type="text" inputMode="numeric" maxLength={8} placeholder="Enter the code"
+                    value={otp}
+                    onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     onKeyDown={e => e.key === 'Enter' && void verifyOtp()}
                     className="rounded-xl text-center text-xl tracking-[0.4em] font-semibold"
                   />

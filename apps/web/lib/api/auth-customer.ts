@@ -77,7 +77,7 @@ authCustomerRoutes.post('/send-otp', zValidator('json', SendOtpBody), async (c) 
 const VerifyOtpBody = z.object({
   email: z.string().email(),
   phone: z.string().min(10).max(15),
-  otp: z.string().length(6),
+  otp: z.string().regex(/^\d{6,8}$/, 'OTP must be 6–8 digits'),
   name: z.string().min(1).max(120).optional(),
 });
 authCustomerRoutes.post('/verify-otp', zValidator('json', VerifyOtpBody), async (c) => {
