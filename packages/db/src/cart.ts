@@ -93,30 +93,44 @@ export async function addToCart(
   }
 }
 
-export async function updateCartItem(customerId: string, productId: string, quantity: number): Promise<void> {
+export async function updateCartItem(
+  jewellerId: string,
+  customerId: string,
+  productId: string,
+  quantity: number,
+): Promise<void> {
   const sb = getSupabaseServer();
   if (quantity <= 0) {
-    await sb.from('cart_items').delete().eq('customer_id', customerId).eq('product_id', productId);
+    await sb.from('cart_items').delete()
+      .eq('jeweller_id', jewellerId).eq('customer_id', customerId).eq('product_id', productId);
   } else {
-    await sb.from('cart_items').update({ quantity }).eq('customer_id', customerId).eq('product_id', productId);
+    await sb.from('cart_items').update({ quantity })
+      .eq('jeweller_id', jewellerId).eq('customer_id', customerId).eq('product_id', productId);
   }
 }
 
-export async function removeFromCart(customerId: string, productId: string): Promise<void> {
+export async function removeFromCart(
+  jewellerId: string,
+  customerId: string,
+  productId: string,
+): Promise<void> {
   const sb = getSupabaseServer();
-  await sb.from('cart_items').delete().eq('customer_id', customerId).eq('product_id', productId);
+  await sb.from('cart_items').delete()
+    .eq('jeweller_id', jewellerId).eq('customer_id', customerId).eq('product_id', productId);
 }
 
-export async function clearCart(customerId: string): Promise<void> {
+export async function clearCart(jewellerId: string, customerId: string): Promise<void> {
   const sb = getSupabaseServer();
-  await sb.from('cart_items').delete().eq('customer_id', customerId);
+  await sb.from('cart_items').delete()
+    .eq('jeweller_id', jewellerId).eq('customer_id', customerId);
 }
 
-export async function getCartCount(customerId: string): Promise<number> {
+export async function getCartCount(jewellerId: string, customerId: string): Promise<number> {
   const sb = getSupabaseServer();
   const { count } = await sb
     .from('cart_items')
     .select('*', { count: 'exact', head: true })
+    .eq('jeweller_id', jewellerId)
     .eq('customer_id', customerId);
   return count ?? 0;
 }

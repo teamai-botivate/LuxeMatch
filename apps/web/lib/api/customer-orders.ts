@@ -59,9 +59,10 @@ customerOrderRoutes.get('/:id', async (c) => {
 // GET /api/customer/addresses
 customerOrderRoutes.get('/addresses', async (c) => {
   const env = getServerEnv();
+  const jewellerId = c.get('shopJewellerId');
   const session = await requireSession(c, env.LM_PIN_COOKIE_SECRET);
   if (!session.valid) return sendError(c, 'unauthorized', 'Login required', 401);
-  const addresses = await getCustomerAddresses(session.payload.customerId);
+  const addresses = await getCustomerAddresses(jewellerId, session.payload.customerId);
   return sendData(c, { addresses });
 });
 
@@ -111,7 +112,7 @@ customerOrderRoutes.post('/checkout', zValidator('json', CheckoutBody), async (c
 
   // Save address if requested
   if (body.save_address && body.address) {
-    await upsertCustomerAddress(customerId, {
+    await upsertCustomerAddress(jewellerId, customerId, {
       label: 'Home', is_default: true,
       name: body.address.name, phone: body.address.phone,
       line1: body.address.line1, line2: body.address.line2 ?? null,
@@ -143,7 +144,7 @@ customerOrderRoutes.post('/checkout', zValidator('json', CheckoutBody), async (c
   });
 
   // Clear cart after successful order
-  await clearCart(customerId);
+  await clearCart(jewellerId, customerId);
 
   return sendData(c, { orderId: order.id, orderNumber: order.order_number, status: order.status });
 });

@@ -55,30 +55,33 @@ cartRoutes.post('/', zValidator('json', AddBody), async (c) => {
 const PatchBody = z.object({ quantity: z.number().int().min(0).max(10) });
 cartRoutes.patch('/:productId', zValidator('json', PatchBody), async (c) => {
   const env = getServerEnv();
+  const jewellerId = c.get('shopJewellerId');
   const session = await getSession(c, env.LM_PIN_COOKIE_SECRET);
   if (!session.valid) return sendError(c, 'unauthorized', 'Login required', 401);
 
   const productId = c.req.param('productId');
   const { quantity } = c.req.valid('json');
-  await updateCartItem(session.payload.customerId, productId, quantity);
+  await updateCartItem(jewellerId, session.payload.customerId, productId, quantity);
   return sendData(c, { ok: true });
 });
 
 // DELETE /api/customer/cart/:productId
 cartRoutes.delete('/:productId', async (c) => {
   const env = getServerEnv();
+  const jewellerId = c.get('shopJewellerId');
   const session = await getSession(c, env.LM_PIN_COOKIE_SECRET);
   if (!session.valid) return sendError(c, 'unauthorized', 'Login required', 401);
 
-  await removeFromCart(session.payload.customerId, c.req.param('productId'));
+  await removeFromCart(jewellerId, session.payload.customerId, c.req.param('productId'));
   return sendData(c, { ok: true });
 });
 
 // DELETE /api/customer/cart  (clear all)
 cartRoutes.delete('/', async (c) => {
   const env = getServerEnv();
+  const jewellerId = c.get('shopJewellerId');
   const session = await getSession(c, env.LM_PIN_COOKIE_SECRET);
   if (!session.valid) return sendError(c, 'unauthorized', 'Login required', 401);
-  await clearCart(session.payload.customerId);
+  await clearCart(jewellerId, session.payload.customerId);
   return sendData(c, { ok: true });
 });

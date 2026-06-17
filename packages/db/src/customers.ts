@@ -69,7 +69,32 @@ export async function updateCustomerName(
   await sb.from('customers').update(patch).eq('jeweller_id', jewellerId).eq('id', customerId);
 }
 
-export async function getCustomerAddresses(customerId: string): Promise<CustomerAddressRow[]> {
+/**
+ * Tenancy guard for the address helpers: customer_addresses has no jeweller_id
+ * column of its own (it FKs to customers), so we verify the customer row belongs
+ * to this jeweller before touching addresses keyed by customer_id. Throws if the
+ * customer does not belong to the shop — never depend on upstream cookie scoping
+ * alone.
+ */
+async function assertCustomerBelongsToJeweller(
+  jewellerId: string,
+  customerId: string,
+): Promise<void> {
+  const sb = getSupabaseServer();
+  const { data } = await sb
+    .from('customers')
+    .select('id')
+    .eq('jeweller_id', jewellerId)
+    .eq('id', customerId)
+    .maybeSingle();
+  if (!data) throw new Error('Customer does not belong to this jeweller');
+}
+
+export async function getCustomerAddresses(
+  jewellerId: string,
+  customerId: string,
+): Promise<CustomerAddressRow[]> {
+  await assertCustomerBelongsToJeweller(jewellerId, customerId);
   const sb = getSupabaseServer();
   const { data } = await sb
     .from('customer_addresses')
@@ -80,9 +105,11 @@ export async function getCustomerAddresses(customerId: string): Promise<Customer
 }
 
 export async function upsertCustomerAddress(
+  jewellerId: string,
   customerId: string,
   address: Omit<CustomerAddressRow, 'id' | 'customer_id' | 'created_at'>,
 ): Promise<CustomerAddressRow> {
+  await assertCustomerBelongsToJeweller(jewellerId, customerId);
   const sb = getSupabaseServer();
   if (address.is_default) {
     await sb.from('customer_addresses').update({ is_default: false }).eq('customer_id', customerId);

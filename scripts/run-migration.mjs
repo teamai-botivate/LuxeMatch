@@ -1,17 +1,23 @@
 /**
- * Run the 0002_ecommerce migration against the live Supabase project.
- * Works by creating a temporary exec function, using it, then dropping it.
- * Usage:  node scripts/run-migration.mjs
+ * Seed demo e-commerce data (branches, customers, addresses, orders) into the
+ * live Supabase project. Despite the name, this does NOT apply migrations —
+ * apply 0002_ecommerce.sql via the Supabase dashboard SQL editor first.
+ *
+ * Credentials are loaded from the environment (NOT hardcoded). Run via:
+ *   pnpm seed:ecommerce
+ * which loads apps/web/.env.local through `tsx --env-file`.
  */
-import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const SUPABASE_URL = 'https://bpbsewxuyurpkjpdvqoy.supabase.co';
-const SERVICE_KEY  =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYnNld3h1eXVycGtqcGR2cW95Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTcwMzU1NiwiZXhwIjoyMDk1Mjc5NTU2fQ.xe6-ZMnDnbeEpjf7Wq8vkmYCGYYdLcVxH3KSGk6IB_k';
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.\n' +
+      'Run via `pnpm seed:ecommerce` so apps/web/.env.local is loaded.',
+  );
+  process.exit(1);
+}
 
 const headers = {
   apikey: SERVICE_KEY,
