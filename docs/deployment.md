@@ -31,6 +31,7 @@ Both Render services are described in [`render.yaml`](../render.yaml) (Blueprint
 2. SQL Editor → run, in order:
    - `supabase/migrations/0001_init.sql`
    - `supabase/migrations/0002_ecommerce.sql`
+   - `supabase/migrations/0003_security_advisor.sql`
    - `supabase/seed.sql` (creates the demo jeweller for testing — skip for a
      pure-production project, or delete the demo row afterward)
    - Alternatively: `node scripts/run-migration.mjs` from a machine with the
@@ -40,6 +41,11 @@ Both Render services are described in [`render.yaml`](../render.yaml) (Blueprint
    - `anon` `public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY` (**server only — never ship to the browser**)
 4. Realtime is on by default; the multi-device sync hooks use it.
+
+`0003_security_advisor.sql` resolves Supabase Security Advisor warnings without
+opening direct table access: it adds explicit `service_role` policies to every
+RLS-enabled app table, and fixes mutable `search_path` on the trigger functions
+flagged by the advisor.
 
 ### 2. Qdrant Cloud
 1. Create a free-tier cluster.
