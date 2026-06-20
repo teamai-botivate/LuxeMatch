@@ -192,7 +192,7 @@ export default function CatalogPage() {
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-[#e4cf8f]">Browse</p>
               <h1 className="font-display text-4xl font-normal tracking-normal md:text-6xl">All jewellery</h1>
               <p className="mt-4 text-sm leading-6 text-white/68">
-                Filter by category, metal, occasion, price, or try-on availability across this jeweller's live catalogue.
+                Filter by category, metal, occasion, price, or try-on availability across this jeweller&apos;s live catalogue.
               </p>
             </div>
           </div>
