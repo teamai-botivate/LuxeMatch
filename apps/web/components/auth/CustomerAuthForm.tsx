@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Camera,
   Eye,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CUSTOMER_QUERY_KEY } from '@/hooks/use-customer';
 
 type ApiErrorResponse = { error?: { message?: string } };
 
@@ -52,6 +54,7 @@ const MIN_PASSWORD = 6;
 
 export default function CustomerAuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/';
   const copy = COPY[mode];
@@ -119,6 +122,7 @@ export default function CustomerAuthForm({ mode }: { mode: Mode }) {
         }),
       });
       if (res.ok) {
+        await queryClient.invalidateQueries({ queryKey: CUSTOMER_QUERY_KEY });
         router.push(next);
         router.refresh();
       } else {
@@ -143,6 +147,7 @@ export default function CustomerAuthForm({ mode }: { mode: Mode }) {
         body: JSON.stringify({ email: normalizedEmail, password }),
       });
       if (res.ok) {
+        await queryClient.invalidateQueries({ queryKey: CUSTOMER_QUERY_KEY });
         router.push(next);
         router.refresh();
       } else {

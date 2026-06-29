@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export type CustomerSession = {
   customerId: string;
@@ -10,32 +11,35 @@ export type CustomerSession = {
   avatarUrl?: string | null;
 };
 
+type MeResponse = {
+  data: CustomerSession | null;
+};
+
+export const CUSTOMER_QUERY_KEY = ['customer', 'me'] as const;
+
+async function fetchCustomer() {
+  const res = await fetch('/api/customer/me', { cache: 'no-store' });
+  const json = (await res.json()) as MeResponse;
+  return json.data;
+}
+
 export function useCustomer() {
-  const [customer, setCustomer] = useState<CustomerSession | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: customer = null, isLoading, refetch } = useQuery({
+    queryKey: CUSTOMER_QUERY_KEY,
+    queryFn: fetchCustomer,
+    retry: false,
+    staleTime: 30_000,
+  });
 
   const refresh = useCallback(async () => {
-    try {
-      const res = await fetch('/api/customer/me', { cache: 'no-store' });
-      if (res.ok) {
-        const json = (await res.json()) as { data: CustomerSession };
-        setCustomer(json.data);
-      } else {
-        setCustomer(null);
-      }
-    } catch {
-      setCustomer(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { void refresh(); }, [refresh]);
+    await refetch();
+  }, [refetch]);
 
   const logout = useCallback(async () => {
     await fetch('/api/customer/logout', { method: 'POST' });
-    setCustomer(null);
-  }, []);
+    queryClient.setQueryData(CUSTOMER_QUERY_KEY, null);
+  }, [queryClient]);
 
-  return { customer, loading, refresh, logout };
+  return { customer, loading: isLoading, refresh, logout };
 }

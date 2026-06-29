@@ -185,7 +185,7 @@ authCustomerRoutes.get('/me', async (c) => {
   const env = getServerEnv();
   const jewellerId = c.get('shopJewellerId');
   const result = await verifyCustomerCookie(readCustomerCookie(c), env.LM_PIN_COOKIE_SECRET);
-  if (!result.valid) return sendError(c, 'unauthorized', 'Not logged in', 401);
+  if (!result.valid) return sendData(c, null);
 
   // Read mutable fields (name, avatar) fresh from the DB so changes made after
   // login show up without re-issuing the signed cookie.
